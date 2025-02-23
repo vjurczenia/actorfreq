@@ -79,6 +79,9 @@ func printTopActors(actorCounts map[string]int) {
 
 	fmt.Println("Top 10 Actor appearance counts:")
 	for i, entry := range sortedActors {
+		if i == 0 && entry.Count == 1 {
+			fmt.Printf("Actorigami!")
+		}
 		if i >= 10 {
 			break
 		}
