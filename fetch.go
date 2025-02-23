@@ -11,6 +11,29 @@ import (
 // https://developer.themoviedb.org/docs/rate-limiting
 const requestInterval = time.Second / 50 // Limit to 50 requests per second
 
+func fetchActorsForUser(username string, tmdbAPIKey string, cache map[string][]string) map[string]int {
+	actorCounts := make(map[string]int)
+	page := 1
+	for {
+		// Use the user name and page number in the URL
+		url := fmt.Sprintf("https://letterboxd.com/%s/films/by/date/page/%d", username, page)
+		fmt.Println("Fetching:", url)
+
+		actors := fetchActorsForPage(url, tmdbAPIKey, cache)
+		if len(actors) == 0 {
+			fmt.Println("No more actors found for page:", page)
+			break // Exit loop when no actors are found
+		}
+		for _, actor := range actors {
+			actorCounts[actor]++
+		}
+
+		page++
+	}
+
+	return actorCounts
+}
+
 // fetchActorsForPage fetches actors for a specific page URL.
 func fetchActorsForPage(url, tmdbAPIKey string, cache map[string][]string) []string {
 	// You can make a request to the URL to parse HTML and extract film slugs

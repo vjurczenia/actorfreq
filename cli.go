@@ -34,28 +34,8 @@ func cli() {
 		return
 	}
 
-	// Load cached data from file if it exists
 	cache := loadCache()
-	actorCounts := make(map[string]int)
-	page := 1
-	for {
-		// Use the user name and page number in the URL
-		url := fmt.Sprintf("https://letterboxd.com/%s/films/by/date/page/%d", *username, page)
-		fmt.Println("Fetching:", url)
-
-		actors := fetchActorsForPage(url, tmdbAPIKey, cache)
-		if len(actors) == 0 {
-			fmt.Println("No more actors found for page:", page)
-			break // Exit loop when no actors are found
-		}
-		for _, actor := range actors {
-			actorCounts[actor]++
-		}
-
-		page++
-	}
-
-	// Save cache to file
+	actorCounts := fetchActorsForUser(*username, tmdbAPIKey, cache)
 	saveCache(cache)
 
 	// Output top 10 actors
