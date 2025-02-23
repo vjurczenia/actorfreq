@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// https://developer.themoviedb.org/docs/rate-limiting
 const requestInterval = time.Second / 50 // Limit to 50 requests per second
 
 // fetchActorsForPage fetches actors for a specific page URL.
