@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"time"
 )
 
@@ -32,6 +33,24 @@ func fetchActorsForUser(username string, tmdbAPIKey string, cache map[string][]s
 	}
 
 	return actorCounts
+}
+
+type actorEntry struct {
+	Name  string
+	Count int
+}
+
+func sortActorCounts(actorCounts map[string]int) []actorEntry {
+	var sortedActors []actorEntry
+	for actor, count := range actorCounts {
+		sortedActors = append(sortedActors, actorEntry{Name: actor, Count: count})
+	}
+
+	sort.Slice(sortedActors, func(i, j int) bool {
+		return sortedActors[i].Count > sortedActors[j].Count
+	})
+
+	return sortedActors
 }
 
 // fetchActorsForPage fetches actors for a specific page URL.

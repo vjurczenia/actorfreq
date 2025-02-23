@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"sort"
 
 	"github.com/joho/godotenv"
 )
@@ -43,19 +42,7 @@ func cli() {
 }
 
 func printTopActors(actorCounts map[string]int) {
-	type actorEntry struct {
-		Name  string
-		Count int
-	}
-
-	var sortedActors []actorEntry
-	for actor, count := range actorCounts {
-		sortedActors = append(sortedActors, actorEntry{Name: actor, Count: count})
-	}
-
-	sort.Slice(sortedActors, func(i, j int) bool {
-		return sortedActors[i].Count > sortedActors[j].Count
-	})
+	sortedActors := sortActorCounts(actorCounts)
 
 	fmt.Println("Top 10 Actor appearance counts:")
 	for i, entry := range sortedActors {
