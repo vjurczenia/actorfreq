@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actor Fetcher</title>
+    <script>
+        async function fetchActors(event) {
+            event.preventDefault();
+            const username = document.getElementById("username").value;
+            const resultDiv = document.getElementById("results");
+            resultDiv.innerHTML = "Fetching actors...";
+
+            const response = await fetch("/fetch", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: "username=" + encodeURIComponent(username)
+            });
+
+            if (!response.ok) {
+                resultDiv.innerHTML = "Error fetching actors.";
+                return;
+            }
+
+            const data = await response.json();
+            resultDiv.innerHTML = "<h3>Top Actors:</h3><ul>" +
+                data.map(actorEntry => `<li>${actorEntry.Name}: ${actorEntry.Count} appearances</li>`).join("") +
+                "</ul>";
+        }
+    </script>
+</head>
+<body>
+    <h1>Actor Fetcher</h1>
+    <form onsubmit="fetchActors(event)">
+        <label for="username">Enter Username:</label>
+        <input type="text" id="username" required>
+        <button type="submit">Fetch</button>
+    </form>
+    <div id="results"></div>
+</body>
+</html>
