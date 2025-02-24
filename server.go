@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"os"
 	"sync"
-
-	"github.com/joho/godotenv"
 )
 
 var (
@@ -47,13 +45,6 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Load environment variables from .env file
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Error loading .env file")
-		return
-	}
-
 	// Load the API key from environment variables
 	tmdbAPIKey := os.Getenv("TMDB_API_KEY")
 	if tmdbAPIKey == "" {
@@ -67,12 +58,13 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 	cacheLock.Unlock()
 
 	actorCounts := fetchActorsForUser(username, tmdbAPIKey, cache)
-	sortedActors := sortActorCounts(actorCounts)
 
 	// Save the updated cache
 	cacheLock.Lock()
 	saveCache(cache)
 	cacheLock.Unlock()
+
+	sortedActors := sortActorCounts(actorCounts)
 
 	// Return JSON response
 	w.Header().Set("Content-Type", "application/json")

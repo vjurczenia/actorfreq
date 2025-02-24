@@ -4,8 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 func cli() {
@@ -16,13 +14,6 @@ func cli() {
 	// Ensure a username was provided
 	if *username == "" {
 		fmt.Println("Error: Username must be provided.")
-		return
-	}
-
-	// Load environment variables from .env file
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Error loading .env file")
 		return
 	}
 
