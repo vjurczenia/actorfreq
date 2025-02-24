@@ -12,7 +12,7 @@ import (
 // https://developer.themoviedb.org/docs/rate-limiting
 const requestInterval = time.Second / 50 // Limit to 50 requests per second
 
-func fetchActorsForUser(username string, tmdbAPIKey string, cache map[string][]string) map[string]int {
+func fetchActorsForUser(username string, tmdbAPIKey string, cache map[string][]string) []actorEntry {
 	actorCounts := make(map[string]int)
 	page := 1
 	for {
@@ -32,7 +32,16 @@ func fetchActorsForUser(username string, tmdbAPIKey string, cache map[string][]s
 		page++
 	}
 
-	return actorCounts
+	// Filter out actors appearing only once
+	for actor, count := range actorCounts {
+		if count < 2 {
+			delete(actorCounts, actor)
+		}
+	}
+
+	sortedActors := sortActorCounts(actorCounts)
+
+	return sortedActors
 }
 
 type actorEntry struct {

@@ -64,9 +64,7 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 	saveCache(cache)
 	cacheLock.Unlock()
 
-	sortedActors := sortActorCounts(actorCounts)
-
 	// Return JSON response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(sortedActors)
+	json.NewEncoder(w).Encode(actorCounts)
 }

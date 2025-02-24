@@ -32,11 +32,9 @@ func cli() {
 	printTopActors(actorCounts)
 }
 
-func printTopActors(actorCounts map[string]int) {
-	sortedActors := sortActorCounts(actorCounts)
-
+func printTopActors(actorCounts []actorEntry) {
 	fmt.Println("Top 10 Actor appearance counts:")
-	for i, entry := range sortedActors {
+	for i, entry := range actorCounts {
 		if i == 0 && entry.Count == 1 {
 			fmt.Printf("Actorigami!")
 		}
