@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 )
 
@@ -16,7 +15,7 @@ func loadCache() map[string][]string {
 	// Check if the cache file exists
 	if _, err := os.Stat(cacheFile); err == nil {
 		// File exists, read it
-		data, err := ioutil.ReadFile(cacheFile)
+		data, err := os.ReadFile(cacheFile)
 		if err != nil {
 			fmt.Println("Error reading cache file:", err)
 			return cache
@@ -39,7 +38,7 @@ func saveCache(cache map[string][]string) {
 		return
 	}
 
-	if err := ioutil.WriteFile(cacheFile, data, 0644); err != nil {
+	if err := os.WriteFile(cacheFile, data, 0644); err != nil {
 		fmt.Println("Error writing cache file:", err)
 	}
 }

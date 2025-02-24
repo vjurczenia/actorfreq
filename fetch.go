@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sort"
 	"time"
@@ -93,7 +93,7 @@ func fetchActorsFromTMDB(slug string, tmdbAPIKey string) []string {
 		} `json:"results"`
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error reading TMDB response:", err)
 		return nil
@@ -134,7 +134,7 @@ func fetchMovieCast(movieID int, tmdbAPIKey string) []string {
 		} `json:"cast"`
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error reading TMDB cast response:", err)
 		return nil
