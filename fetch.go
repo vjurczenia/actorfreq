@@ -10,10 +10,10 @@ import (
 const requestInterval = time.Second / 50 // Limit to 50 requests per second
 
 func fetchActorCountsForUser(username string, cache map[string][]string) []actorEntry {
-	movieSlugs := fetchMovieSlugs(username)
+	filmSlugs := fetchFilmSlugs(username)
 	actorCounts := make(map[string]int)
 	var actors []string
-	for _, slug := range movieSlugs {
+	for _, slug := range filmSlugs {
 		if cachedActors, found := cache[slug]; found {
 			actors = cachedActors
 			fmt.Println("Cache hit for slug:", slug)

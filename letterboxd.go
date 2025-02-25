@@ -9,7 +9,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-func fetchMovieSlugs(username string) []string {
+func fetchFilmSlugs(username string) []string {
 	var wg sync.WaitGroup
 	numPages := fetchNumberOfPages(username)
 	results := make(chan []string, numPages)
@@ -26,12 +26,12 @@ func fetchMovieSlugs(username string) []string {
 	wg.Wait()
 	close(results)
 
-	var movieSlugs []string
+	var filmSlugs []string
 	for res := range results {
-		movieSlugs = append(movieSlugs, res...)
+		filmSlugs = append(filmSlugs, res...)
 	}
 
-	return movieSlugs
+	return filmSlugs
 }
 
 func fetchNumberOfPages(username string) int {
