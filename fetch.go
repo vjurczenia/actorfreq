@@ -11,6 +11,7 @@ const requestInterval = time.Second / 50 // Limit to 50 requests per second
 
 func fetchActorCountsForUser(username string, cache map[string][]string) []actorEntry {
 	filmSlugs := fetchFilmSlugs(username)
+
 	actorCounts := make(map[string]int)
 	var actors []string
 	for _, slug := range filmSlugs {
@@ -22,6 +23,7 @@ func fetchActorCountsForUser(username string, cache map[string][]string) []actor
 			cache[slug] = actors
 			time.Sleep(requestInterval) // Rate limit API calls
 		}
+
 		for _, actor := range actors {
 			actorCounts[actor]++
 		}

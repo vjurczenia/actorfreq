@@ -9,6 +9,10 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+var getLetterboxdURL = func(username string, page int) string {
+	return fmt.Sprintf("https://letterboxd.com/%s/films/by/date/page/%d", username, page)
+}
+
 func fetchFilmSlugs(username string) []string {
 	var wg sync.WaitGroup
 	numPages := fetchNumberOfPages(username)
@@ -16,7 +20,7 @@ func fetchFilmSlugs(username string) []string {
 
 	for i := range numPages {
 		wg.Add(1)
-		url := fmt.Sprintf("https://letterboxd.com/%s/films/by/date/page/%d", username, i+1)
+		url := getLetterboxdURL(username, i+1)
 		go func(url string, wg *sync.WaitGroup, results chan<- []string) {
 			defer wg.Done()
 			results <- extractFilmSlugsFromURL(url)
@@ -35,7 +39,7 @@ func fetchFilmSlugs(username string) []string {
 }
 
 func fetchNumberOfPages(username string) int {
-	url := fmt.Sprintf("https://letterboxd.com/%s/films/by/date/page/%d", username, 1)
+	url := getLetterboxdURL(username, 1)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -50,13 +54,12 @@ func fetchNumberOfPages(username string) int {
 		return 1
 	}
 
-	lastPage := doc.Find("li.paginate-page").Last()
+	lastPageElement := doc.Find("li.paginate-page").Last()
 
 	// Convert string to int
-	num, err := strconv.Atoi(lastPage.Text())
+	lastPage, err := strconv.Atoi(lastPageElement.Text())
 	if err != nil {
-		fmt.Println("Error:", err)
 		return 1
 	}
-	return num
+	return lastPage
 }
