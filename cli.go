@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 )
 
 func cli() {
@@ -17,15 +16,8 @@ func cli() {
 		return
 	}
 
-	// Fetch the TMDB API key from environment variables
-	tmdbAPIKey := os.Getenv("TMDB_API_KEY")
-	if tmdbAPIKey == "" {
-		fmt.Println("TMDB API key is missing from the .env file.")
-		return
-	}
-
 	cache := loadCache()
-	actorCounts := fetchActorsForUser(*username, tmdbAPIKey, cache)
+	actorCounts := fetchActorCountsForUser(*username, cache)
 	saveCache(cache)
 
 	// Output top 10 actors

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"os"
 	"sync"
 )
 
@@ -45,19 +44,12 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Load the API key from environment variables
-	tmdbAPIKey := os.Getenv("TMDB_API_KEY")
-	if tmdbAPIKey == "" {
-		http.Error(w, "Missing TMDB API key", http.StatusInternalServerError)
-		return
-	}
-
 	// Fetch actors (using caching)
 	cacheLock.Lock()
 	cache := loadCache()
 	cacheLock.Unlock()
 
-	actorCounts := fetchActorsForUser(username, tmdbAPIKey, cache)
+	actorCounts := fetchActorCountsForUser(username, cache)
 
 	// Save the updated cache
 	cacheLock.Lock()
