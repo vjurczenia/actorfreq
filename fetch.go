@@ -3,11 +3,7 @@ package main
 import (
 	"log/slog"
 	"sort"
-	"time"
 )
-
-// https://developer.themoviedb.org/docs/rate-limiting
-const requestInterval = time.Second / 50 // Limit to 50 requests per second
 
 func fetchActorCounts(username string) []actorEntry {
 	filmSlugs := fetchFilmSlugs(username)
@@ -24,7 +20,6 @@ func fetchActorCounts(username string) []actorEntry {
 			if actors != nil {
 				cache[slug] = actors
 			}
-			time.Sleep(requestInterval) // Rate limit API calls
 		}
 
 		for _, actor := range actors {

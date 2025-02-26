@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 )
 
 func fetchActors(slug string) []string {
@@ -54,6 +55,8 @@ func fetchActors(slug string) []string {
 }
 
 func fetchTMDBResponseBody(url string) []byte {
+	// https://developer.themoviedb.org/docs/rate-limiting
+	const requestInterval = time.Second / 50 // Limit to 50 requests per second
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		slog.Error("Error creating TMDB request", "error", err)
@@ -70,6 +73,7 @@ func fetchTMDBResponseBody(url string) []byte {
 		slog.Error("Error fetching TMDB data", "error", err)
 		return nil
 	}
+	time.Sleep(requestInterval) // Rate limit API calls
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
