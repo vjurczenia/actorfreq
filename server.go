@@ -5,11 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"sync"
-)
-
-var (
-	cacheLock sync.Mutex
 )
 
 func startServer() {
@@ -44,15 +39,7 @@ func fetchActorCountsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cacheLock.Lock()
-	cache := loadCache()
-	cacheLock.Unlock()
-
-	actorCounts := fetchActorCounts(username, cache)
-
-	cacheLock.Lock()
-	saveCache(cache)
-	cacheLock.Unlock()
+	actorCounts := fetchActorCounts(username)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(actorCounts)

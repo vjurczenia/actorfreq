@@ -7,10 +7,11 @@ import (
 )
 
 const cacheFile = "cache.json" // File where cache will be saved
+var cache map[string][]string
 
 // loadCache loads the cached actors from a file (cache.json).
-func loadCache() map[string][]string {
-	cache := make(map[string][]string)
+func loadCache() {
+	cache = make(map[string][]string)
 
 	// Check if the cache file exists
 	if _, err := os.Stat(cacheFile); err == nil {
@@ -18,7 +19,6 @@ func loadCache() map[string][]string {
 		data, err := os.ReadFile(cacheFile)
 		if err != nil {
 			fmt.Println("Error reading cache file:", err)
-			return cache
 		}
 
 		// Unmarshal the cache data into the map
@@ -26,12 +26,10 @@ func loadCache() map[string][]string {
 			fmt.Println("Error unmarshalling cache data:", err)
 		}
 	}
-
-	return cache
 }
 
 // saveCache persists the cache to a file (cache.json).
-func saveCache(cache map[string][]string) {
+var saveCache = func() {
 	data, err := json.MarshalIndent(cache, "", "  ")
 	if err != nil {
 		fmt.Println("Error marshalling cache data:", err)

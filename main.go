@@ -14,6 +14,8 @@ func main() {
 		return
 	}
 
+	loadCache()
+
 	// cli()
 	startServer()
 }

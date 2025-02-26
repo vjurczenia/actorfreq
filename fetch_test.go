@@ -58,12 +58,18 @@ func TestFetchActorCounts(t *testing.T) {
 		}, nil
 	})
 
-	cache := map[string][]string{
+	initialSaveCache := saveCache
+	saveCache = func() {}
+	defer func() { saveCache = initialSaveCache }()
+
+	initialCache := cache
+	cache = map[string][]string{
 		"saving-private-ryan": {"Tom Hanks", "Matt Damon"},
 		// "toy-story":           {"Tom Hanks"},
 	}
+	defer func() { cache = initialCache }()
 
-	actualActorCounts := fetchActorCounts("testUser", cache)
+	actualActorCounts := fetchActorCounts("testUser")
 
 	expectedActorCounts := []actorEntry{
 		{Name: "Tom Hanks", Count: 2},
