@@ -14,7 +14,7 @@ var (
 
 func startServer() {
 	http.HandleFunc("/", homeHandler)
-	http.HandleFunc("/fetch", fetchHandler)
+	http.HandleFunc("/fetch-actor-counts", fetchActorCountsHandler)
 
 	port := "8080"
 	fmt.Println("Starting server on port", port)
@@ -31,8 +31,8 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, nil)
 }
 
-// fetchHandler processes the form submission, fetches actors, and returns JSON
-func fetchHandler(w http.ResponseWriter, r *http.Request) {
+// fetchActorCountsHandler processes the form submission, fetches actor counts, and returns JSON
+func fetchActorCountsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
@@ -44,19 +44,16 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch actors (using caching)
 	cacheLock.Lock()
 	cache := loadCache()
 	cacheLock.Unlock()
 
-	actorCounts := fetchActorCountsForUser(username, cache)
+	actorCounts := fetchActorCounts(username, cache)
 
-	// Save the updated cache
 	cacheLock.Lock()
 	saveCache(cache)
 	cacheLock.Unlock()
 
-	// Return JSON response
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(actorCounts)
 }

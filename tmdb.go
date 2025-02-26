@@ -8,10 +8,8 @@ import (
 	"os"
 )
 
-// fetchActorsFromTMDB fetches the actors for a given movie slug from TMDB API.
-func fetchActorsFromTMDB(slug string) []string {
+func fetchActors(slug string) []string {
 	url := fmt.Sprintf("https://api.themoviedb.org/3/search/movie?query=%s", slug)
-
 	body := fetchTMDBResponseBody(url)
 
 	var result struct {
@@ -31,15 +29,8 @@ func fetchActorsFromTMDB(slug string) []string {
 	}
 
 	movieID := result.Results[0].ID
-	return fetchMovieCastFromTMDB(movieID)
-
-}
-
-// fetchMovieCastFromTMDB fetches the cast for a specific movie by ID.
-func fetchMovieCastFromTMDB(movieID int) []string {
-	url := fmt.Sprintf("https://api.themoviedb.org/3/movie/%d/credits", movieID)
-
-	body := fetchTMDBResponseBody(url)
+	url = fmt.Sprintf("https://api.themoviedb.org/3/movie/%d/credits", movieID)
+	body = fetchTMDBResponseBody(url)
 
 	var castResult struct {
 		Cast []struct {
@@ -48,7 +39,7 @@ func fetchMovieCastFromTMDB(movieID int) []string {
 	}
 
 	if err := json.Unmarshal(body, &castResult); err != nil {
-		fmt.Println("Error parsing TMDB cast JSON:", err)
+		fmt.Println("Error parsing TMDB JSON:", err)
 		return nil
 	}
 
@@ -58,6 +49,7 @@ func fetchMovieCastFromTMDB(movieID int) []string {
 	}
 
 	return actors
+
 }
 
 func fetchTMDBResponseBody(url string) []byte {

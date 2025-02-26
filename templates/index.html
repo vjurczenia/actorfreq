@@ -131,7 +131,7 @@
         }
     </style>
     <script>
-        async function fetchActors(event) {
+        async function fetchActorCounts(event) {
             event.preventDefault();
             const username = document.getElementById("username").value;
             const resultDiv = document.getElementById("results");
@@ -144,14 +144,14 @@
             resultDiv.classList.remove('error', 'success');
             
             try {
-                const response = await fetch("/fetch", {
+                const response = await fetch("/fetch-actor-counts", {
                     method: "POST",
                     headers: { "Content-Type": "application/x-www-form-urlencoded" },
                     body: "username=" + encodeURIComponent(username)
                 });
 
                 if (!response.ok) {
-                    throw new Error("Error fetching actors.");
+                    throw new Error("Error fetching actor counts.");
                 }
 
                 const data = await response.json();
@@ -177,7 +177,7 @@
 <body>
     <div class="container">
         <h1>Actor Frequency</h1>
-        <form onsubmit="fetchActors(event)">
+        <form onsubmit="fetchActorCounts(event)">
             <label for="username">Enter Letterboxd Username:</label>
             <input type="text" id="username" required>
             <button type="submit">Submit</button>

@@ -14,7 +14,7 @@ func (fn RoundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) 
 	return fn(req)
 }
 
-func TestFetchActorCountsForUser(t *testing.T) {
+func TestFetchActorCounts(t *testing.T) {
 	initialGetTMDBAccessToken := getTMDBAccessToken
 	defer func() { getTMDBAccessToken = initialGetTMDBAccessToken }()
 	getTMDBAccessToken = func() string { return "TMDB_ACCESS_TOKEN" }
@@ -63,7 +63,7 @@ func TestFetchActorCountsForUser(t *testing.T) {
 		// "toy-story":           {"Tom Hanks"},
 	}
 
-	actualActorCounts := fetchActorCountsForUser("testUser", cache)
+	actualActorCounts := fetchActorCounts("testUser", cache)
 
 	expectedActorCounts := []actorEntry{
 		{Name: "Tom Hanks", Count: 2},

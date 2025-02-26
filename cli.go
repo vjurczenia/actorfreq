@@ -17,7 +17,7 @@ func cli() {
 	}
 
 	cache := loadCache()
-	actorCounts := fetchActorCountsForUser(*username, cache)
+	actorCounts := fetchActorCounts(*username, cache)
 	saveCache(cache)
 
 	// Output top 10 actors

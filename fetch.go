@@ -9,7 +9,7 @@ import (
 // https://developer.themoviedb.org/docs/rate-limiting
 const requestInterval = time.Second / 50 // Limit to 50 requests per second
 
-func fetchActorCountsForUser(username string, cache map[string][]string) []actorEntry {
+func fetchActorCounts(username string, cache map[string][]string) []actorEntry {
 	filmSlugs := fetchFilmSlugs(username)
 
 	actorCounts := make(map[string]int)
@@ -19,7 +19,7 @@ func fetchActorCountsForUser(username string, cache map[string][]string) []actor
 			actors = cachedActors
 			fmt.Println("Cache hit for slug:", slug)
 		} else {
-			actors = fetchActorsFromTMDB(slug)
+			actors = fetchActors(slug)
 			cache[slug] = actors
 			time.Sleep(requestInterval) // Rate limit API calls
 		}
