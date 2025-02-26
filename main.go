@@ -2,6 +2,7 @@ package main
 
 import (
 	"log/slog"
+	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -13,6 +14,11 @@ func main() {
 		slog.Error("Error loading .env file")
 		return
 	}
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelError,
+	}))
+	slog.SetDefault(logger)
 
 	loadCache()
 
