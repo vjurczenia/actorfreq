@@ -7,12 +7,15 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
 func fetchActors(slug string) []string {
-	url := fmt.Sprintf("https://api.themoviedb.org/3/search/movie?query=%s", slug)
-	body := fetchTMDBResponseBody(url)
+	var url string
+	var body []byte
+	url = fmt.Sprintf("https://api.themoviedb.org/3/search/movie?query=%s", slug)
+	body = fetchTMDBResponseBody(url)
 
 	var result struct {
 		Results []struct {
@@ -26,8 +29,23 @@ func fetchActors(slug string) []string {
 	}
 
 	if len(result.Results) == 0 {
-		slog.Error("No movie found", "slug", slug)
-		return nil
+		lastHyphen := strings.LastIndex(slug, "-")
+		if lastHyphen != -1 {
+			name := slug[:lastHyphen]
+			year := slug[lastHyphen+1:]
+			url = fmt.Sprintf("https://api.themoviedb.org/3/search/movie?query=%s&year=%s", name, year)
+			body = fetchTMDBResponseBody(url)
+
+			if err := json.Unmarshal(body, &result); err != nil {
+				slog.Error("Error parsing TMDB JSON", "error", err)
+				return nil
+			}
+			if len(result.Results) == 0 {
+				slog.Error("Movie not found", "slug", slug, "name", name, "year", year)
+				return nil
+			}
+		}
+
 	}
 
 	movieID := result.Results[0].ID
