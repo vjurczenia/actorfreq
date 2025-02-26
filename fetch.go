@@ -21,7 +21,9 @@ func fetchActorCounts(username string) []actorEntry {
 		} else {
 			slog.Info("Cache miss", "slug", slug)
 			actors = fetchActors(slug)
-			cache[slug] = actors
+			if actors != nil {
+				cache[slug] = actors
+			}
 			time.Sleep(requestInterval) // Rate limit API calls
 		}
 
