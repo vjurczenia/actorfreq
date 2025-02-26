@@ -2,16 +2,12 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net/http"
-	"strings"
 
-	"golang.org/x/net/html"
+	"github.com/PuerkitoBio/goquery"
 )
 
-// extractFilmSlugsFromURL parses the HTML of the page and extracts the slugs.
 func extractFilmSlugsFromURL(url string) []string {
-	// Fetch the HTML content from the given URL
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Error fetching URL:", err)
@@ -24,34 +20,21 @@ func extractFilmSlugsFromURL(url string) []string {
 		return nil
 	}
 
-	bodyBytes, err := io.ReadAll(resp.Body)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		fmt.Println("Error reading response body:", err)
-		return nil
-	}
-
-	// Parse the HTML and extract slugs
-	doc, err := html.Parse(strings.NewReader(string(bodyBytes)))
-	if err != nil {
-		fmt.Println("Error parsing HTML:", err)
+		fmt.Println("Error loading HTML document:", err)
 		return nil
 	}
 
 	return extractFilmSlugs(doc)
 }
 
-// extractFilmSlugs recursively parses the HTML document to extract film slugs.
-func extractFilmSlugs(n *html.Node) []string {
+func extractFilmSlugs(doc *goquery.Document) []string {
 	var slugs []string
-	if n.Type == html.ElementNode {
-		for _, attr := range n.Attr {
-			if attr.Key == "data-film-slug" {
-				slugs = append(slugs, attr.Val)
-			}
+	doc.Find("[data-film-slug]").Each(func(i int, s *goquery.Selection) {
+		if val, exists := s.Attr("data-film-slug"); exists {
+			slugs = append(slugs, val)
 		}
-	}
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		slugs = append(slugs, extractFilmSlugs(c)...)
-	}
+	})
 	return slugs
 }
