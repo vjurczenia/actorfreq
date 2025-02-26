@@ -14,23 +14,43 @@ var getLetterboxdURL = func(username string, page int) string {
 }
 
 func fetchFilmSlugs(username string) []string {
-	var wg sync.WaitGroup
-	numPages := fetchNumberOfPages(username)
-	results := make(chan []string, numPages)
-
-	for i := range numPages {
-		wg.Add(1)
-		url := getLetterboxdURL(username, i+1)
-		go func(url string, wg *sync.WaitGroup, results chan<- []string) {
-			defer wg.Done()
-			results <- extractFilmSlugsFromURL(url)
-		}(url, &wg, results)
+	// Fetch film slugs and page count from first page
+	doc := fetchFilmsPageDoc(username, 1)
+	filmSlugs := extractFilmSlugs(doc)
+	lastPageElement := doc.Find("li.paginate-page").Last()
+	numPages, err := strconv.Atoi(lastPageElement.Text())
+	if err != nil {
+		numPages = 1
 	}
 
+	// Fetch film slugs from remaining pages in parallel
+	var wg sync.WaitGroup
+	results := make(chan []string, numPages)
+	for page := 2; page <= numPages; page++ {
+		wg.Add(1)
+		go func(username string, page int, wg *sync.WaitGroup, results chan<- []string) {
+			defer wg.Done()
+			doc := fetchFilmsPageDoc(username, page)
+			results <- extractFilmSlugs(doc)
+		}(username, page, &wg, results)
+	}
+
+	// Verify that we didn't miss any pages sequentially
+	page := numPages + 1
+	for {
+		doc := fetchFilmsPageDoc(username, page)
+		filmSlugsOnPage := extractFilmSlugs(doc)
+		if len(filmSlugsOnPage) == 0 {
+			fmt.Println("No more film slugs found for page:", page)
+			break
+		}
+		filmSlugs = append(filmSlugs, filmSlugsOnPage...)
+		page++
+	}
+
+	// Wait for goroutines to finish and aggregate results
 	wg.Wait()
 	close(results)
-
-	var filmSlugs []string
 	for res := range results {
 		filmSlugs = append(filmSlugs, res...)
 	}
@@ -38,28 +58,35 @@ func fetchFilmSlugs(username string) []string {
 	return filmSlugs
 }
 
-func fetchNumberOfPages(username string) int {
-	url := getLetterboxdURL(username, 1)
-
+func fetchFilmsPageDoc(username string, page int) *goquery.Document {
+	url := fmt.Sprintf("https://letterboxd.com/%s/films/by/date/page/%d", username, page)
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Println("Error fetching the URL:", err)
-		return 1
+		fmt.Println("Error fetching URL:", err)
+		return nil
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Println("Error: non-OK HTTP status:", resp.Status)
+		return nil
+	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		fmt.Println("Error loading HTML document:", err)
-		return 1
+		return nil
 	}
 
-	lastPageElement := doc.Find("li.paginate-page").Last()
+	return doc
+}
 
-	// Convert string to int
-	lastPage, err := strconv.Atoi(lastPageElement.Text())
-	if err != nil {
-		return 1
-	}
-	return lastPage
+func extractFilmSlugs(doc *goquery.Document) []string {
+	var slugs []string
+	doc.Find("[data-film-slug]").Each(func(i int, s *goquery.Selection) {
+		if val, exists := s.Attr("data-film-slug"); exists {
+			slugs = append(slugs, val)
+		}
+	})
+	return slugs
 }

@@ -25,8 +25,9 @@ func TestFetchActorCountsForUser(t *testing.T) {
 
 	actualHTTPCallCounts := make(map[string]int)
 	expectedHTTPCallCounts := map[string]int{
-		"https://letterboxd.com/testUser/films/by/date/page/1":                           2,
+		"https://letterboxd.com/testUser/films/by/date/page/1":                           1,
 		"https://letterboxd.com/testUser/films/by/date/page/2":                           1,
+		"https://letterboxd.com/testUser/films/by/date/page/3":                           1,
 		"https://api.themoviedb.org/3/search/movie?api_key=TMDB_API_KEY&query=toy-story": 1,
 		"https://api.themoviedb.org/3/movie/1234/credits?api_key=TMDB_API_KEY":           1,
 	}
@@ -51,7 +52,7 @@ func TestFetchActorCountsForUser(t *testing.T) {
 		default:
 			responseString = ""
 		}
-		actualHTTPCallCounts[urlString] = actualHTTPCallCounts[urlString] + 1
+		actualHTTPCallCounts[urlString]++
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader(responseString)),
