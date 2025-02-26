@@ -8,40 +8,16 @@ import (
 	"os"
 )
 
-var getTMDBAPIKey = func() string {
-	tmdbAPIKey := os.Getenv("TMDB_API_KEY")
-	if tmdbAPIKey == "" {
-		fmt.Println("TMDB API key is missing from the .env file.")
-	}
-	return tmdbAPIKey
-}
-
 // fetchActorsFromTMDB fetches the actors for a given movie slug from TMDB API.
 func fetchActorsFromTMDB(slug string) []string {
-	tmdbAPIKey := getTMDBAPIKey()
-	apiURL := fmt.Sprintf("https://api.themoviedb.org/3/search/movie?api_key=%s&query=%s", tmdbAPIKey, slug)
-	resp, err := http.Get(apiURL)
-	if err != nil {
-		fmt.Println("Error fetching TMDB data:", err)
-		return nil
-	}
-	defer resp.Body.Close()
+	url := fmt.Sprintf("https://api.themoviedb.org/3/search/movie?query=%s", slug)
 
-	if resp.StatusCode != http.StatusOK {
-		fmt.Println("Error: non-OK TMDB API status:", resp.Status)
-		return nil
-	}
+	body := fetchTMDBResponseBody(url)
 
 	var result struct {
 		Results []struct {
 			ID int `json:"id"`
 		} `json:"results"`
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading TMDB response:", err)
-		return nil
 	}
 
 	if err := json.Unmarshal(body, &result); err != nil {
@@ -55,35 +31,20 @@ func fetchActorsFromTMDB(slug string) []string {
 	}
 
 	movieID := result.Results[0].ID
-	return fetchMovieCast(movieID)
+	return fetchMovieCastFromTMDB(movieID)
+
 }
 
-// fetchMovieCast fetches the cast for a specific movie by ID.
-func fetchMovieCast(movieID int) []string {
-	tmdbAPIKey := getTMDBAPIKey()
-	apiURL := fmt.Sprintf("https://api.themoviedb.org/3/movie/%d/credits?api_key=%s", movieID, tmdbAPIKey)
-	resp, err := http.Get(apiURL)
-	if err != nil {
-		fmt.Println("Error fetching movie cast:", err)
-		return nil
-	}
-	defer resp.Body.Close()
+// fetchMovieCastFromTMDB fetches the cast for a specific movie by ID.
+func fetchMovieCastFromTMDB(movieID int) []string {
+	url := fmt.Sprintf("https://api.themoviedb.org/3/movie/%d/credits", movieID)
 
-	if resp.StatusCode != http.StatusOK {
-		fmt.Println("Error: non-OK TMDB API status:", resp.Status)
-		return nil
-	}
+	body := fetchTMDBResponseBody(url)
 
 	var castResult struct {
 		Cast []struct {
 			Name string `json:"name"`
 		} `json:"cast"`
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading TMDB cast response:", err)
-		return nil
 	}
 
 	if err := json.Unmarshal(body, &castResult); err != nil {
@@ -97,4 +58,39 @@ func fetchMovieCast(movieID int) []string {
 	}
 
 	return actors
+}
+
+func fetchTMDBResponseBody(url string) []byte {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("Error creating TMDB request:", err)
+		return nil
+	}
+
+	tmdbAccessToken := getTMDBAccessToken()
+	bearerToken := fmt.Sprintf("Bearer %s", tmdbAccessToken)
+	req.Header.Add("accept", "application/json")
+	req.Header.Add("Authorization", bearerToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("Error fetching TMDB data:", err)
+		return nil
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading TMDB response:", err)
+		return nil
+	}
+
+	return body
+}
+
+var getTMDBAccessToken = func() string {
+	tmdbAccessToken := os.Getenv("TMDB_ACCESS_TOKEN")
+	if tmdbAccessToken == "" {
+		fmt.Println("TMDB Access Token is missing from the .env file.")
+	}
+	return tmdbAccessToken
 }

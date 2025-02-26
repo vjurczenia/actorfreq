@@ -15,26 +15,24 @@ func (fn RoundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) 
 }
 
 func TestFetchActorCountsForUser(t *testing.T) {
-	initialGetTMDBAPIKeyFunc := getTMDBAPIKey
-	defer func() { getTMDBAPIKey = initialGetTMDBAPIKeyFunc }()
-
-	getTMDBAPIKey = func() string { return "TMDB_API_KEY" }
-
-	initialTransport := http.DefaultTransport
-	defer func() { http.DefaultTransport = initialTransport }()
+	initialGetTMDBAccessToken := getTMDBAccessToken
+	defer func() { getTMDBAccessToken = initialGetTMDBAccessToken }()
+	getTMDBAccessToken = func() string { return "TMDB_ACCESS_TOKEN" }
 
 	actualHTTPCallCounts := make(map[string]int)
 	expectedHTTPCallCounts := map[string]int{
-		"https://letterboxd.com/testUser/films/by/date/page/1":                           1,
-		"https://letterboxd.com/testUser/films/by/date/page/2":                           1,
-		"https://letterboxd.com/testUser/films/by/date/page/3":                           1,
-		"https://api.themoviedb.org/3/search/movie?api_key=TMDB_API_KEY&query=toy-story": 1,
-		"https://api.themoviedb.org/3/movie/1234/credits?api_key=TMDB_API_KEY":           1,
+		"https://letterboxd.com/testUser/films/by/date/page/1":      1,
+		"https://letterboxd.com/testUser/films/by/date/page/2":      1,
+		"https://letterboxd.com/testUser/films/by/date/page/3":      1,
+		"https://api.themoviedb.org/3/search/movie?query=toy-story": 1,
+		"https://api.themoviedb.org/3/movie/1234/credits":           1,
 	}
 	for key := range expectedHTTPCallCounts {
 		actualHTTPCallCounts[key] = 0
 	}
 
+	initialTransport := http.DefaultTransport
+	defer func() { http.DefaultTransport = initialTransport }()
 	http.DefaultTransport = RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		urlString := req.URL.String()
 		var responseString string
@@ -45,9 +43,9 @@ func TestFetchActorCountsForUser(t *testing.T) {
 				`<li class="paginate-page"><a>2</a></li></ul>`
 		case "https://letterboxd.com/testUser/films/by/date/page/2":
 			responseString = `<div data-film-slug="toy-story" />`
-		case "https://api.themoviedb.org/3/search/movie?api_key=TMDB_API_KEY&query=toy-story":
+		case "https://api.themoviedb.org/3/search/movie?query=toy-story":
 			responseString = `{"results":[{"id":1234}]}`
-		case "https://api.themoviedb.org/3/movie/1234/credits?api_key=TMDB_API_KEY":
+		case "https://api.themoviedb.org/3/movie/1234/credits":
 			responseString = `{"cast": [{"name": "Tom Hanks"}]}`
 		default:
 			responseString = ""
