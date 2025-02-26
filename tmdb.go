@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-func getTMDBAPIKey() string {
+var getTMDBAPIKey = func() string {
 	tmdbAPIKey := os.Getenv("TMDB_API_KEY")
 	if tmdbAPIKey == "" {
 		fmt.Println("TMDB API key is missing from the .env file.")

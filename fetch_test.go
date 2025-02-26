@@ -1,33 +1,73 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	"net/http"
-	"net/http/httptest"
 	"slices"
+	"strings"
 	"testing"
 )
 
+type RoundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (fn RoundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return fn(req)
+}
+
 func TestFetchActorCountsForUser(t *testing.T) {
 	// Create mock server with an HTML response
-	testLetterboxdServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("<html><body><div data-film-slug='saving-private-ryan' /><div data-film-slug='toy-story' /></body></html>"))
-	}))
-	defer testLetterboxdServer.Close()
+	// testLetterboxdServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// 	w.Header().Set("Content-Type", "text/html")
+	// 	w.WriteHeader(http.StatusOK)
+	// 	w.Write([]byte("<html><body><div data-film-slug='saving-private-ryan' /><div data-film-slug='toy-story' /></body></html>"))
+	// }))
+	// defer testLetterboxdServer.Close()
 
-	// Mock URL functions
-	originalGetLetterboxdURL := getLetterboxdURL
-	getLetterboxdURL = func(username string, page int) string { return testLetterboxdServer.URL }
+	// // Mock URL functions
+	// originalGetLetterboxdURL := getLetterboxdURL
+	// getLetterboxdURL = func(username string, page int) string { return testLetterboxdServer.URL }
 
-	// Restore original functions after the test
-	defer func() {
-		getLetterboxdURL = originalGetLetterboxdURL
-	}()
+	// // Restore original functions after the test
+	// defer func() {
+	// 	getLetterboxdURL = originalGetLetterboxdURL
+	// }()
+
+	initialGetTMDBAPIKeyFunc := getTMDBAPIKey
+	defer func() { getTMDBAPIKey = initialGetTMDBAPIKeyFunc }()
+
+	getTMDBAPIKey = func() string { return "TMDB_API_KEY" }
+
+	initialTransport := http.DefaultTransport
+	defer func() { http.DefaultTransport = initialTransport }()
+
+	http.DefaultTransport = RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		fmt.Println(req.URL)
+		var responseString string
+		switch req.URL.String() {
+		case "https://letterboxd.com/testUser/films/by/date/page/1":
+			responseString = `<div data-film-slug="saving-private-ryan" />` +
+				`<ul><li class="paginate-page">3</li>` +
+				`<li class="paginate-page"><a>2</a></li></ul>`
+		case "https://letterboxd.com/testUser/films/by/date/page/2":
+			responseString = `<div data-film-slug="toy-story" />`
+		case "https://api.themoviedb.org/3/search/movie?api_key=TMDB_API_KEY&query=toy-story":
+			responseString = `{"results":[{"id":1234}]}`
+		case "https://api.themoviedb.org/3/movie/1234/credits?api_key=TMDB_API_KEY":
+			responseString = `{"cast": [{"name": "Tom Hanks"}]}`
+		default:
+			responseString = ""
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(responseString)),
+			Header:     make(http.Header),
+		}, nil
+	})
 
 	cache := map[string][]string{
 		"saving-private-ryan": {"Tom Hanks", "Matt Damon"},
-		"toy-story":           {"Tom Hanks"},
+		// "toy-story":           {"Tom Hanks"},
 	}
 
 	actorCounts := fetchActorCountsForUser("testUser", cache)
