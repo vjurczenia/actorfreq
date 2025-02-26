@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"slices"
@@ -24,10 +23,21 @@ func TestFetchActorCountsForUser(t *testing.T) {
 	initialTransport := http.DefaultTransport
 	defer func() { http.DefaultTransport = initialTransport }()
 
+	actualHTTPCallCounts := make(map[string]int)
+	expectedHTTPCallCounts := map[string]int{
+		"https://letterboxd.com/testUser/films/by/date/page/1":                           2,
+		"https://letterboxd.com/testUser/films/by/date/page/2":                           1,
+		"https://api.themoviedb.org/3/search/movie?api_key=TMDB_API_KEY&query=toy-story": 1,
+		"https://api.themoviedb.org/3/movie/1234/credits?api_key=TMDB_API_KEY":           1,
+	}
+	for key := range expectedHTTPCallCounts {
+		actualHTTPCallCounts[key] = 0
+	}
+
 	http.DefaultTransport = RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
-		fmt.Println(req.URL)
+		urlString := req.URL.String()
 		var responseString string
-		switch req.URL.String() {
+		switch urlString {
 		case "https://letterboxd.com/testUser/films/by/date/page/1":
 			responseString = `<div data-film-slug="saving-private-ryan" />` +
 				`<ul><li class="paginate-page">3</li>` +
@@ -41,6 +51,7 @@ func TestFetchActorCountsForUser(t *testing.T) {
 		default:
 			responseString = ""
 		}
+		actualHTTPCallCounts[urlString] = actualHTTPCallCounts[urlString] + 1
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader(responseString)),
@@ -53,18 +64,21 @@ func TestFetchActorCountsForUser(t *testing.T) {
 		// "toy-story":           {"Tom Hanks"},
 	}
 
-	actorCounts := fetchActorCountsForUser("testUser", cache)
+	actualActorCounts := fetchActorCountsForUser("testUser", cache)
 
-	expected := []actorEntry{
+	expectedActorCounts := []actorEntry{
 		{Name: "Tom Hanks", Count: 2},
 	}
-
-	areEqual := slices.EqualFunc(actorCounts, expected, func(x actorEntry, y actorEntry) bool {
+	actorCountsAreEqual := slices.EqualFunc(expectedActorCounts, actualActorCounts, func(x actorEntry, y actorEntry) bool {
 		return x.Name == y.Name && x.Count == y.Count
 	})
-
-	if !areEqual {
-		t.Errorf("Expected actorCounts %q, got %q", expected, actorCounts)
+	if !actorCountsAreEqual {
+		t.Errorf("Expected actorCounts %v, got %v", expectedActorCounts, actualActorCounts)
 	}
 
+	for key := range actualHTTPCallCounts {
+		if expectedHTTPCallCounts[key] != actualHTTPCallCounts[key] {
+			t.Errorf("Expected %d calls to %q, got %d", expectedHTTPCallCounts[key], key, actualHTTPCallCounts[key])
+		}
+	}
 }
