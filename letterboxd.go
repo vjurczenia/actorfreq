@@ -9,10 +9,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-var getLetterboxdURL = func(username string, page int) string {
-	return fmt.Sprintf("https://letterboxd.com/%s/films/by/date/page/%d", username, page)
-}
-
 func fetchFilmSlugs(username string) []string {
 	// Fetch film slugs and page count from first page
 	doc := fetchFilmsPageDoc(username, 1)
