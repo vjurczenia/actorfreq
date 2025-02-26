@@ -16,23 +16,6 @@ func (fn RoundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) 
 }
 
 func TestFetchActorCountsForUser(t *testing.T) {
-	// Create mock server with an HTML response
-	// testLetterboxdServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 	w.Header().Set("Content-Type", "text/html")
-	// 	w.WriteHeader(http.StatusOK)
-	// 	w.Write([]byte("<html><body><div data-film-slug='saving-private-ryan' /><div data-film-slug='toy-story' /></body></html>"))
-	// }))
-	// defer testLetterboxdServer.Close()
-
-	// // Mock URL functions
-	// originalGetLetterboxdURL := getLetterboxdURL
-	// getLetterboxdURL = func(username string, page int) string { return testLetterboxdServer.URL }
-
-	// // Restore original functions after the test
-	// defer func() {
-	// 	getLetterboxdURL = originalGetLetterboxdURL
-	// }()
-
 	initialGetTMDBAPIKeyFunc := getTMDBAPIKey
 	defer func() { getTMDBAPIKey = initialGetTMDBAPIKeyFunc }()
 
