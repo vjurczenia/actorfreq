@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 )
@@ -19,12 +20,12 @@ func fetchActors(slug string) []string {
 	}
 
 	if err := json.Unmarshal(body, &result); err != nil {
-		fmt.Println("Error parsing TMDB JSON:", err)
+		slog.Error("Error parsing TMDB JSON", "error", err)
 		return nil
 	}
 
 	if len(result.Results) == 0 {
-		fmt.Println("No movie found for slug:", slug)
+		slog.Error("No movie found", "slug", slug)
 		return nil
 	}
 
@@ -39,7 +40,7 @@ func fetchActors(slug string) []string {
 	}
 
 	if err := json.Unmarshal(body, &castResult); err != nil {
-		fmt.Println("Error parsing TMDB JSON:", err)
+		slog.Error("Error parsing TMDB JSON", "error", err)
 		return nil
 	}
 
@@ -55,7 +56,7 @@ func fetchActors(slug string) []string {
 func fetchTMDBResponseBody(url string) []byte {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Println("Error creating TMDB request:", err)
+		slog.Error("Error creating TMDB request", "error", err)
 		return nil
 	}
 
@@ -66,13 +67,13 @@ func fetchTMDBResponseBody(url string) []byte {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println("Error fetching TMDB data:", err)
+		slog.Error("Error fetching TMDB data", "error", err)
 		return nil
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Error reading TMDB response:", err)
+		slog.Error("Error reading TMDB response", "error", err)
 		return nil
 	}
 
@@ -82,7 +83,7 @@ func fetchTMDBResponseBody(url string) []byte {
 var getTMDBAccessToken = func() string {
 	tmdbAccessToken := os.Getenv("TMDB_ACCESS_TOKEN")
 	if tmdbAccessToken == "" {
-		fmt.Println("TMDB Access Token is missing from the .env file.")
+		slog.Error("TMDB Access Token is missing from the .env file.")
 	}
 	return tmdbAccessToken
 }

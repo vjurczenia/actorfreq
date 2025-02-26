@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log/slog"
 	"os"
 )
 
@@ -18,12 +18,12 @@ func loadCache() {
 		// File exists, read it
 		data, err := os.ReadFile(cacheFile)
 		if err != nil {
-			fmt.Println("Error reading cache file:", err)
+			slog.Error("Error reading cache file", "error", err)
 		}
 
 		// Unmarshal the cache data into the map
 		if err := json.Unmarshal(data, &cache); err != nil {
-			fmt.Println("Error unmarshalling cache data:", err)
+			slog.Error("Error unmarshalling cache data", "error", err)
 		}
 	}
 }
@@ -32,11 +32,11 @@ func loadCache() {
 var saveCache = func() {
 	data, err := json.MarshalIndent(cache, "", "  ")
 	if err != nil {
-		fmt.Println("Error marshalling cache data:", err)
+		slog.Error("Error marshalling cache data", "error", err)
 		return
 	}
 
 	if err := os.WriteFile(cacheFile, data, 0644); err != nil {
-		fmt.Println("Error writing cache file:", err)
+		slog.Error("Error writing cache file", "error", err)
 	}
 }

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log/slog"
 	"sort"
 	"time"
 )
@@ -16,9 +16,10 @@ func fetchActorCounts(username string) []actorEntry {
 	var actors []string
 	for _, slug := range filmSlugs {
 		if cachedActors, found := cache[slug]; found {
+			slog.Info("Cache hit", "slug", slug)
 			actors = cachedActors
-			fmt.Println("Cache hit for slug:", slug)
 		} else {
+			slog.Info("Cache miss", "slug", slug)
 			actors = fetchActors(slug)
 			cache[slug] = actors
 			time.Sleep(requestInterval) // Rate limit API calls

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 )
 
 func cli() {
@@ -12,7 +13,7 @@ func cli() {
 
 	// Ensure a username was provided
 	if *username == "" {
-		fmt.Println("Error: Username must be provided.")
+		slog.Error("Error: Username must be provided.")
 		return
 	}
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"sync"
@@ -37,7 +38,7 @@ func fetchFilmSlugs(username string) []string {
 		doc := fetchFilmsPageDoc(username, page)
 		filmSlugsOnPage := extractFilmSlugs(doc)
 		if len(filmSlugsOnPage) == 0 {
-			fmt.Println("No more film slugs found for page:", page)
+			slog.Info("No more film slugs found", "username", username, "page", page)
 			break
 		}
 		filmSlugs = append(filmSlugs, filmSlugsOnPage...)
@@ -58,19 +59,19 @@ func fetchFilmsPageDoc(username string, page int) *goquery.Document {
 	url := fmt.Sprintf("https://letterboxd.com/%s/films/by/date/page/%d", username, page)
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Println("Error fetching URL:", err)
+		slog.Error("Error fetching URL", "error", err)
 		return nil
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		fmt.Println("Error: non-OK HTTP status:", resp.Status)
+		slog.Error("Error: non-OK HTTP status", "status", resp.Status)
 		return nil
 	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		fmt.Println("Error loading HTML document:", err)
+		slog.Error("Error loading HTML document", "error", err)
 		return nil
 	}
 
