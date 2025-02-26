@@ -3,39 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Actor Fetcher</title>
+    <title>Actor Frequency</title>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: 'Helvetica', sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 20px;
+            margin-top: 0;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        label {
+            font-size: 1rem;
+            color: #555;
+            display: block;
+            margin-bottom: 8px;
+            text-align: left;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: #4e73df;
+        }
+
+        button {
+            background-color: #4e73df;
+            color: white;
+            font-size: 1rem;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #3578e5;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: none;
+            margin: 20px auto;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4e73df;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Results Section */
+        #results {
+            margin-top: 20px;
+            color: #444;
+            font-size: 1rem;
+            transition: opacity 0.5s ease;
+            opacity: 0;
+            max-height: 300px; /* Limit the height */
+            overflow-y: auto; /* Enable vertical scrolling */
+            padding-right: 10px; /* Prevent scrollbar overlap */
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        li:last-child {
+            border-bottom: none;
+        }
+
+        /* Success and Error Messages */
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
     <script>
         async function fetchActors(event) {
             event.preventDefault();
             const username = document.getElementById("username").value;
             const resultDiv = document.getElementById("results");
-            resultDiv.innerHTML = "Fetching actors...";
+            const loadingSpinner = document.getElementById("loading");
+            resultDiv.style.opacity = 0; // Start with hidden results
+            resultDiv.innerHTML = ""; // Clear previous results
+            loadingSpinner.style.display = 'block'; // Show loading spinner
 
-            const response = await fetch("/fetch", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: "username=" + encodeURIComponent(username)
-            });
+            // Clear any previous success/error message
+            resultDiv.classList.remove('error', 'success');
+            
+            try {
+                const response = await fetch("/fetch", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: "username=" + encodeURIComponent(username)
+                });
 
-            if (!response.ok) {
-                resultDiv.innerHTML = "Error fetching actors.";
-                return;
+                if (!response.ok) {
+                    throw new Error("Error fetching actors.");
+                }
+
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    resultDiv.innerHTML = "<h3>Top Actors:</h3><ul>" +
+                        data.map(actorEntry => `<li>${actorEntry.Name}: ${actorEntry.Count} appearances</li>`).join("") +
+                        "</ul>";
+                    resultDiv.classList.add('success');
+                } else {
+                    resultDiv.innerHTML = "<p>No actors found.</p>";
+                    resultDiv.classList.add('error');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p>${error.message}</p>`;
+                resultDiv.classList.add('error');
+            } finally {
+                loadingSpinner.style.display = 'none'; // Hide loading spinner
+                resultDiv.style.opacity = 1; // Show results with fade-in effect
             }
-
-            const data = await response.json();
-            resultDiv.innerHTML = "<h3>Top Actors:</h3><ul>" +
-                data.map(actorEntry => `<li>${actorEntry.Name}: ${actorEntry.Count} appearances</li>`).join("") +
-                "</ul>";
         }
     </script>
 </head>
 <body>
-    <h1>Actor Fetcher</h1>
-    <form onsubmit="fetchActors(event)">
-        <label for="username">Enter Username:</label>
-        <input type="text" id="username" required>
-        <button type="submit">Fetch</button>
-    </form>
-    <div id="results"></div>
+    <div class="container">
+        <h1>Actor Frequency</h1>
+        <form onsubmit="fetchActors(event)">
+            <label for="username">Enter Letterboxd Username:</label>
+            <input type="text" id="username" required>
+            <button type="submit">Submit</button>
+        </form>
+        
+        <!-- Loading Spinner -->
+        <div id="loading" class="loading"></div>
+        
+        <!-- Results will be shown here -->
+        <div id="results"></div>
+    </div>
 </body>
 </html>
