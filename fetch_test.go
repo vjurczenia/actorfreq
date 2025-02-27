@@ -8,12 +8,6 @@ import (
 	"testing"
 )
 
-type RoundTripperFunc func(*http.Request) (*http.Response, error)
-
-func (fn RoundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
-	return fn(req)
-}
-
 func TestFetchActorCounts(t *testing.T) {
 	initialGetTMDBAccessToken := getTMDBAccessToken
 	defer func() { getTMDBAccessToken = initialGetTMDBAccessToken }()
