@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strconv"
 	"sync"
 
@@ -13,7 +14,10 @@ import (
 func fetchFilmSlugs(username string) []string {
 	// Fetch film slugs and page count from first page
 	doc := fetchFilmsPageDoc(username, 1)
-	filmSlugs := extractFilmSlugs(doc)
+	filmSlugsOnPage := extractFilmSlugs(doc)
+	filmSlugsByPage := map[int][]string{
+		1: filmSlugsOnPage,
+	}
 	lastPageElement := doc.Find("li.paginate-page").Last()
 	numPages, err := strconv.Atoi(lastPageElement.Text())
 	if err != nil {
@@ -22,34 +26,44 @@ func fetchFilmSlugs(username string) []string {
 
 	// Fetch film slugs from remaining pages in parallel
 	var wg sync.WaitGroup
-	results := make(chan []string, numPages)
+	var mu sync.Mutex
 	for page := 2; page <= numPages; page++ {
 		wg.Add(1)
-		go func(username string, page int, wg *sync.WaitGroup, results chan<- []string) {
+		go func(username string, page int) {
 			defer wg.Done()
 			doc := fetchFilmsPageDoc(username, page)
-			results <- extractFilmSlugs(doc)
-		}(username, page, &wg, results)
+			filmSlugsOnPage := extractFilmSlugs(doc)
+			mu.Lock()
+			filmSlugsByPage[page] = filmSlugsOnPage
+			mu.Unlock()
+		}(username, page)
 	}
 
 	// Verify that we didn't miss any pages sequentially
-	page := numPages + 1
-	for {
+	for page := numPages + 1; true; page++ {
 		doc := fetchFilmsPageDoc(username, page)
 		filmSlugsOnPage := extractFilmSlugs(doc)
 		if len(filmSlugsOnPage) == 0 {
 			slog.Info("No more film slugs found", "username", username, "page", page)
 			break
 		}
-		filmSlugs = append(filmSlugs, filmSlugsOnPage...)
-		page++
+		mu.Lock()
+		filmSlugsByPage[page] = filmSlugsOnPage
+		mu.Unlock()
 	}
 
 	// Wait for goroutines to finish and aggregate results
 	wg.Wait()
-	close(results)
-	for res := range results {
-		filmSlugs = append(filmSlugs, res...)
+
+	var pages []int
+	for key, _ := range filmSlugsByPage {
+		pages = append(pages, key)
+	}
+	sort.Ints(pages)
+
+	var filmSlugs []string
+	for _, page := range pages {
+		filmSlugs = append(filmSlugs, filmSlugsByPage[page]...)
 	}
 
 	return filmSlugs
