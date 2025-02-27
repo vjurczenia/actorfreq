@@ -43,7 +43,7 @@
             text-align: left;
         }
 
-        input[type="text"] {
+        input[type="text"], input[type="number"] {
             width: 100%;
             padding: 12px;
             font-size: 1rem;
@@ -55,7 +55,7 @@
             transition: border-color 0.3s ease;
         }
 
-        input[type="text"]:focus {
+        input[type="text"]:focus, input[type="number"]:focus {
             border-color: #4e73df;
         }
 
@@ -134,6 +134,7 @@
         async function fetchActorCounts(event) {
             event.preventDefault();
             const username = document.getElementById("username").value;
+            const lastNMovies = document.getElementById("lastNMovies").value;
             const resultDiv = document.getElementById("results");
             const loadingSpinner = document.getElementById("loading");
             resultDiv.style.opacity = 0; // Start with hidden results
@@ -147,7 +148,7 @@
                 const response = await fetch("/fetch-actor-counts", {
                     method: "POST",
                     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: "username=" + encodeURIComponent(username)
+                    body: "username=" + encodeURIComponent(username) + "&lastNMovies=" + encodeURIComponent(lastNMovies)
                 });
 
                 if (!response.ok) {
@@ -180,6 +181,10 @@
         <form onsubmit="fetchActorCounts(event)">
             <label for="username">Enter Letterboxd Username:</label>
             <input type="text" id="username" required>
+
+            <label for="lastNMovies">Number of Recent Movies to Consider:</label>
+            <input type="number" id="lastNMovies" placeholder="Optional (considers all by default)">
+
             <button type="submit">Submit</button>
         </form>
         

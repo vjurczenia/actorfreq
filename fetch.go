@@ -5,8 +5,12 @@ import (
 	"sort"
 )
 
-func fetchActorCounts(username string) []actorEntry {
+func fetchActorCounts(username string, lastNMovies int) []actorEntry {
 	filmSlugs := fetchFilmSlugs(username)
+
+	if lastNMovies > 0 && lastNMovies < len(filmSlugs) {
+		filmSlugs = filmSlugs[:lastNMovies]
+	}
 
 	actorCounts := make(map[string]int)
 	var actors []string

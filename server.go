@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strconv"
 )
 
 func startServer() {
@@ -39,7 +40,16 @@ func fetchActorCountsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	actorCounts := fetchActorCounts(username)
+	lastNMoviesFormValue := r.FormValue("lastNMovies")
+	lastNMovies := -1
+	if lastNMoviesFormValue != "" {
+		lastNMoviesInt, err := strconv.Atoi(lastNMoviesFormValue)
+		if err == nil {
+			lastNMovies = lastNMoviesInt
+		}
+	}
+
+	actorCounts := fetchActorCounts(username, lastNMovies)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(actorCounts)

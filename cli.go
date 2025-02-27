@@ -9,6 +9,7 @@ import (
 func cli() {
 	// Parse command-line arguments
 	username := flag.String("username", "", "The username to fetch data for")
+	lastNMovies := flag.Int("lastNMovies", -1, "Last N movies to fetch data for")
 	flag.Parse()
 
 	// Ensure a username was provided
@@ -17,7 +18,7 @@ func cli() {
 		return
 	}
 
-	actorCounts := fetchActorCounts(*username)
+	actorCounts := fetchActorCounts(*username, *lastNMovies)
 
 	// Output top 10 actors
 	printTopActors(actorCounts)

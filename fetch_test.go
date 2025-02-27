@@ -36,7 +36,8 @@ func TestFetchActorCounts(t *testing.T) {
 				`<ul><li class="paginate-page">3</li>` +
 				`<li class="paginate-page"><a>2</a></li></ul>`
 		case "https://letterboxd.com/testUser/films/by/date/page/2":
-			responseString = `<div data-film-slug="toy-story" />`
+			responseString = `<div data-film-slug="toy-story" />` +
+				`<div data-film-slug="forrest-gump" />`
 		case "https://api.themoviedb.org/3/search/movie?query=toy-story":
 			responseString = `{"results":[{"id":1234}]}`
 		case "https://api.themoviedb.org/3/movie/1234/credits":
@@ -63,7 +64,7 @@ func TestFetchActorCounts(t *testing.T) {
 	}
 	defer func() { cache = initialCache }()
 
-	actualActorCounts := fetchActorCounts("testUser")
+	actualActorCounts := fetchActorCounts("testUser", 2)
 
 	expectedActorCounts := []actorEntry{
 		{Name: "Tom Hanks", Count: 2},
