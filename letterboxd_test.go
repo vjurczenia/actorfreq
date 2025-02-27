@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"reflect"
@@ -49,7 +48,6 @@ func TestFetchFilmSlugs(t *testing.T) {
 	})
 
 	actualFilmSlugs := fetchFilmSlugs("testUser")
-	fmt.Println(actualFilmSlugs)
 
 	expectedFilmSlugs := []string{
 		"saving-private-ryan", "forrest-gump", "toy-story",
