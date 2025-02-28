@@ -75,23 +75,6 @@
             background-color: #3578e5;
         }
 
-        /* Loading Spinner */
-        .loading {
-            display: none;
-            margin: 20px auto;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #4e73df;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 2s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
         /* Results Section */
         #results {
             margin-top: 20px;
@@ -129,49 +112,72 @@
             color: green;
             font-weight: bold;
         }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 20px;
+            background-color: #ddd;
+            border-radius: 5px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background-color: #4e73df;
+            border-radius: 5px;
+        }
     </style>
     <script>
+        let eventSource;
+
         async function fetchActorCounts(event) {
             event.preventDefault();
             const username = document.getElementById("username").value;
             const lastNMovies = document.getElementById("lastNMovies").value;
             const resultDiv = document.getElementById("results");
-            const loadingSpinner = document.getElementById("loading");
+            const progressContainer = document.getElementById("progress-container");
+            const progressBar = document.getElementById("progress-bar");
             resultDiv.style.opacity = 0; // Start with hidden results
             resultDiv.innerHTML = ""; // Clear previous results
-            loadingSpinner.style.display = 'block'; // Show loading spinner
+            progressContainer.style.display = 'block'; // Show progress bar
+            progressBar.style.width = '0%'; // Reset progress bar
 
             // Clear any previous success/error message
             resultDiv.classList.remove('error', 'success');
-            
-            try {
-                const response = await fetch("/fetch-actor-counts", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: "username=" + encodeURIComponent(username) + "&lastNMovies=" + encodeURIComponent(lastNMovies)
-                });
 
-                if (!response.ok) {
-                    throw new Error("Error fetching actor counts.");
-                }
+            // Open a connection to the server for receiving progress updates and results
+            eventSource = new EventSource(`/fetch-actor-counts?username=${encodeURIComponent(username)}&lastNMovies=${encodeURIComponent(lastNMovies)}`);
 
-                const data = await response.json();
-                if (data && data.length > 0) {
+            eventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.numerator !== undefined && data.denominator !== undefined) {
+                    // Progress update
+                    const progress = (data.numerator / data.denominator) * 100;
+                    progressBar.style.width = `${Math.min(progress, 100)}%`; // Update the progress bar
+                } else if (data.actors) {
+                    console.log(data);
+
+                    // Final result (actors data)
                     resultDiv.innerHTML = "<h3>Top Actors:</h3><ul>" +
-                        data.map(actorEntry => `<li>${actorEntry.Name}: ${actorEntry.Count} appearances</li>`).join("") +
+                        data.actors.map(actorEntry => `<li>${actorEntry.Name}: ${actorEntry.Count} appearances</li>`).join("") +
                         "</ul>";
                     resultDiv.classList.add('success');
-                } else {
-                    resultDiv.innerHTML = "<p>No actors found.</p>";
-                    resultDiv.classList.add('error');
+                    eventSource.close(); // Close the EventSource connection once done
+                    progressContainer.style.display = 'none'; // Hide progress bar
+                    resultDiv.style.opacity = 1; // Show results with fade-in effect
                 }
-            } catch (error) {
-                resultDiv.innerHTML = `<p>${error.message}</p>`;
-                resultDiv.classList.add('error');
-            } finally {
-                loadingSpinner.style.display = 'none'; // Hide loading spinner
+            };
+
+            eventSource.onerror = function() {
+                console.error("Error receiving progress updates.");
+                eventSource.close(); // Close the connection in case of error
+                progressContainer.style.display = 'none'; // Hide progress bar
                 resultDiv.style.opacity = 1; // Show results with fade-in effect
-            }
+            };
         }
     </script>
 </head>
@@ -187,9 +193,11 @@
 
             <button type="submit">Submit</button>
         </form>
-        
-        <!-- Loading Spinner -->
-        <div id="loading" class="loading"></div>
+
+        <!-- Progress Bar -->
+        <div id="progress-container" class="progress-container">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
         
         <!-- Results will be shown here -->
         <div id="results"></div>
