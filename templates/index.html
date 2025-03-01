@@ -84,7 +84,6 @@
             opacity: 0;
             max-height: 300px; /* Limit the height */
             overflow-y: auto; /* Enable vertical scrolling */
-            padding-right: 10px; /* Prevent scrollbar overlap */
         }
 
         ul {
@@ -104,7 +103,7 @@
 
         /* Success and Error Messages */
         .error {
-            color: red;
+            color: red !important;
             font-weight: bold;
         }
 
@@ -179,6 +178,8 @@
 
             eventSource.onerror = function() {
                 console.error("Error receiving progress updates.");
+                resultDiv.innerHTML = "Error"
+                resultDiv.classList.add('error');
                 eventSource.close(); // Close the connection in case of error
                 progressContainer.style.display = 'none'; // Hide progress bar
                 resultDiv.style.opacity = 1; // Show results with fade-in effect
