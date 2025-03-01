@@ -2,19 +2,26 @@ package main
 
 import (
 	"log/slog"
+	"net/http"
 	"sort"
 )
 
-func fetchActorCounts(username string, lastNMovies int) []actorEntry {
+func fetchActorCounts(username string, lastNMovies int, w *http.ResponseWriter) []actorEntry {
 	filmSlugs := fetchFilmSlugs(username)
 
 	if lastNMovies > 0 && lastNMovies < len(filmSlugs) {
 		filmSlugs = filmSlugs[:lastNMovies]
 	}
 
+	if w != nil {
+		sendMapAsSSEData(*w, map[string]int{
+			"total": len(filmSlugs),
+		})
+	}
+
 	actorCounts := make(map[string]int)
 	var actors []string
-	for _, slug := range filmSlugs {
+	for i, slug := range filmSlugs {
 		if cachedActors, found := cache[slug]; found {
 			slog.Info("Cache hit", "slug", slug)
 			actors = cachedActors
@@ -28,6 +35,12 @@ func fetchActorCounts(username string, lastNMovies int) []actorEntry {
 
 		for _, actor := range actors {
 			actorCounts[actor]++
+		}
+
+		if w != nil {
+			sendMapAsSSEData(*w, map[string]int{
+				"progress": i,
+			})
 		}
 	}
 

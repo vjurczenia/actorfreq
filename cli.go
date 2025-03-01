@@ -18,7 +18,7 @@ func cli() {
 		return
 	}
 
-	actorCounts := fetchActorCounts(*username, *lastNMovies)
+	actorCounts := fetchActorCounts(*username, *lastNMovies, nil)
 
 	// Output top 10 actors
 	printTopActors(actorCounts)

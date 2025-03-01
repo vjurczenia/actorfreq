@@ -152,13 +152,18 @@
             // Open a connection to the server for receiving progress updates and results
             eventSource = new EventSource(`/fetch-actor-counts?username=${encodeURIComponent(username)}&lastNMovies=${encodeURIComponent(lastNMovies)}`);
 
+            var total = 0;
             eventSource.onmessage = function(event) {
                 const data = JSON.parse(event.data);
-                if (data.numerator !== undefined && data.denominator !== undefined) {
+                if (data.total) {
+                    total = data.total;
+                }
+                else if (data.progress) {
                     // Progress update
-                    const progress = (data.numerator / data.denominator) * 100;
+                    const progress = (data.progress / total) * 100;
                     progressBar.style.width = `${Math.min(progress, 100)}%`; // Update the progress bar
-                } else if (data.actors) {
+                }
+                else if (data.actors) {
                     console.log(data);
 
                     // Final result (actors data)

@@ -64,7 +64,7 @@ func TestFetchActorCounts(t *testing.T) {
 	}
 	defer func() { cache = initialCache }()
 
-	actualActorCounts := fetchActorCounts("testUser", 2)
+	actualActorCounts := fetchActorCounts("testUser", 2, nil)
 
 	expectedActorCounts := []actorEntry{
 		{Name: "Tom Hanks", Count: 2},

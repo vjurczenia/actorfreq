@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"log/slog"
 	"net/http"
 	"strconv"
 )
@@ -50,102 +49,33 @@ func fetchActorCountsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// actorCounts := fetchActorCounts(username, lastNMovies)
-
-	// w.Header().Set("Content-Type", "application/json")
-	// json.NewEncoder(w).Encode(actorCounts)
-
 	// Set the headers for SSE
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	filmSlugs := fetchFilmSlugs(username)
+	actorCounts := fetchActorCounts(username, lastNMovies, &w)
 
-	if lastNMovies > 0 && lastNMovies < len(filmSlugs) {
-		filmSlugs = filmSlugs[:lastNMovies]
-	}
-
-	progress := map[string]int{
-		"numerator":   0,
-		"denominator": len(filmSlugs),
-	}
-
-	// Serialize the Fraction object to JSON
-	progressData, err := json.Marshal(progress)
-	if err != nil {
-		http.Error(w, "Failed to marshal JSON", http.StatusInternalServerError)
-		return
-	}
-
-	// Send the JSON object as SSE data
-	fmt.Fprintf(w, "data: %s\n\n", string(progressData))
-
-	// Flush the response so the data is sent immediately
-	if flusher, ok := w.(http.Flusher); ok {
-		flusher.Flush()
-	}
-
-	actorCounts := make(map[string]int)
-	var actors []string
-	for _, slug := range filmSlugs {
-		if cachedActors, found := cache[slug]; found {
-			slog.Info("Cache hit", "slug", slug)
-			actors = cachedActors
-		} else {
-			slog.Info("Cache miss", "slug", slug)
-			actors = fetchActors(slug)
-			if actors != nil {
-				cache[slug] = actors
-			}
-		}
-
-		for _, actor := range actors {
-			actorCounts[actor]++
-		}
-
-		progress["numerator"]++
-
-		data, err := json.Marshal(progress)
-		if err != nil {
-			http.Error(w, "Failed to marshal JSON", http.StatusInternalServerError)
-			return
-		}
-
-		fmt.Fprintf(w, "data: %s\n\n", string(data))
-
-		if flusher, ok := w.(http.Flusher); ok {
-			flusher.Flush()
-		}
-	}
-
-	// Filter out actors appearing only once
-	for actor, count := range actorCounts {
-		if count < 2 {
-			delete(actorCounts, actor)
-		}
-	}
-
-	sortedActors := sortActorCounts(actorCounts)
-
-	result := map[string][]actorEntry{
-		"actors": sortedActors,
-	}
-
-	// Serialize the Fraction object to JSON
-	resultData, err := json.Marshal(result)
-	if err != nil {
-		http.Error(w, "Failed to marshal JSON", http.StatusInternalServerError)
-		return
-	}
-
-	// Send the JSON object as SSE data
-	fmt.Fprintf(w, "data: %s\n\n", string(resultData))
-
-	// Flush the response so the data is sent immediately
-	if flusher, ok := w.(http.Flusher); ok {
-		flusher.Flush()
-	}
+	sendMapAsSSEData(w, map[string][]actorEntry{
+		"actors": actorCounts,
+	})
 
 	saveCache()
+}
+
+func sendMapAsSSEData[K comparable, V any](w http.ResponseWriter, m map[K]V) {
+	// Serialize the map to JSON
+	md, err := json.Marshal(m)
+	if err != nil {
+		http.Error(w, "Failed to marshal JSON", http.StatusInternalServerError)
+		return
+	}
+
+	// Send the JSON object as SSE data
+	fmt.Fprintf(w, "data: %s\n\n", string(md))
+
+	// Flush the response so the data is sent immediately
+	if flusher, ok := w.(http.Flusher); ok {
+		flusher.Flush()
+	}
 }
