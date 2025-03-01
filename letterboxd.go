@@ -56,8 +56,8 @@ func fetchFilmSlugs(username string) []string {
 	wg.Wait()
 
 	var pages []int
-	for key, _ := range filmSlugsByPage {
-		pages = append(pages, key)
+	for page := range filmSlugsByPage {
+		pages = append(pages, page)
 	}
 	sort.Ints(pages)
 
