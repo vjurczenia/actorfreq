@@ -6,6 +6,11 @@ import (
 	"sort"
 )
 
+type FilmDetails struct {
+	Title string
+	Cast  []string
+}
+
 func fetchActorCounts(username string, lastNMovies int, w *http.ResponseWriter) []actorEntry {
 	filmSlugs := fetchFilmSlugs(username)
 
@@ -19,39 +24,53 @@ func fetchActorCounts(username string, lastNMovies int, w *http.ResponseWriter) 
 		})
 	}
 
-	actorCounts := make(map[string]int)
-	var actors []string
+	actorCounts := make(map[string][]string)
+
 	for i, slug := range filmSlugs {
-		if cachedActors, found := cache[slug]; found {
+		cacheMutex.Lock()
+		cachedData, found := cache[slug]
+		cacheMutex.Unlock()
+
+		if found {
 			slog.Info("Cache hit", "slug", slug)
-			actors = cachedActors
+			for _, actor := range cachedData.Cast {
+				actorCounts[actor] = append(actorCounts[actor], cachedData.Title)
+			}
 		} else {
 			slog.Info("Cache miss", "slug", slug)
-			actors = fetchActors(slug)
-			if actors != nil {
-				cache[slug] = actors
+			movieResults, err := searchMovie(slug)
+			if err != nil || len(movieResults.Results) == 0 {
+				slog.Error("Error searching movie", "slug", slug)
+				continue
 			}
-		}
 
-		for _, actor := range actors {
-			actorCounts[actor]++
+			topMovieResult := movieResults.Results[0]
+			castResult, err := fetchMovieCredits(topMovieResult.ID)
+			if err != nil {
+				slog.Error("Error fetching cast for movie", "ID", topMovieResult.ID, "title", topMovieResult.Title)
+				continue
+			}
+
+			var actorList []string
+			for _, castMember := range castResult.Cast {
+				actorCounts[castMember.Name] = append(actorCounts[castMember.Name], topMovieResult.Title)
+				actorList = append(actorList, castMember.Name)
+			}
+
+			// Store result in cache
+			cacheMutex.Lock()
+			cache[slug] = FilmDetails{Title: topMovieResult.Title, Cast: actorList}
+			cacheMutex.Unlock()
 		}
 
 		if w != nil {
 			sendMapAsSSEData(*w, map[string]int{
-				"progress": i,
+				"progress": i + 1,
 			})
 		}
 	}
 
-	// Filter out actors appearing only once
-	for actor, count := range actorCounts {
-		if count < 2 {
-			delete(actorCounts, actor)
-		}
-	}
-
-	sortedActors := sortActorCounts(actorCounts)
+	sortedActors := cleanActorMovies(actorCounts)
 
 	saveCache()
 
@@ -59,18 +78,21 @@ func fetchActorCounts(username string, lastNMovies int, w *http.ResponseWriter) 
 }
 
 type actorEntry struct {
-	Name  string
-	Count int
+	Name   string
+	Movies []string
 }
 
-func sortActorCounts(actorCounts map[string]int) []actorEntry {
+func cleanActorMovies(actorMovies map[string][]string) []actorEntry {
+	// Filter out actors appearing only once and sort by movies descending
 	var sortedActors []actorEntry
-	for actor, count := range actorCounts {
-		sortedActors = append(sortedActors, actorEntry{Name: actor, Count: count})
+	for actor, movies := range actorMovies {
+		if len(movies) > 1 {
+			sortedActors = append(sortedActors, actorEntry{Name: actor, Movies: movies})
+		}
 	}
 
 	sort.Slice(sortedActors, func(i, j int) bool {
-		return sortedActors[i].Count > sortedActors[j].Count
+		return len(sortedActors[i].Movies) > len(sortedActors[j].Movies)
 	})
 
 	return sortedActors

@@ -27,12 +27,12 @@ func cli() {
 func printTopActors(actorCounts []actorEntry) {
 	fmt.Println("Top 10 Actor appearance counts:")
 	for i, entry := range actorCounts {
-		if i == 0 && entry.Count == 1 {
+		if i == 0 && len(entry.Movies) == 1 {
 			fmt.Printf("Actorigami!")
 		}
 		if i >= 10 {
 			break
 		}
-		fmt.Printf("%s: %d\n", entry.Name, entry.Count)
+		fmt.Printf("%s: %d\n", entry.Name, len(entry.Movies))
 	}
 }

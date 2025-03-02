@@ -86,22 +86,25 @@
             overflow-y: auto; /* Enable vertical scrolling */
         }
 
+        h3 {
+            margin: 0;
+        }
+
         ul {
             list-style-type: none;
             padding: 0;
             margin: 0;
         }
 
-        li {
+        li.actor-entry {
             padding: 8px;
             border-bottom: 1px solid #eee;
         }
 
-        li:last-child {
+        li.actor-entry:last-child {
             border-bottom: none;
         }
 
-        /* Success and Error Messages */
         .error {
             color: red !important;
             font-weight: bold;
@@ -110,6 +113,12 @@
         .success {
             color: green;
             font-weight: bold;
+        }
+
+        .movie-list {
+            font-size: 0.8rem;
+            color: #555;
+            margin-top: 5px;
         }
 
         /* Progress Bar */
@@ -133,6 +142,14 @@
     <script>
         let eventSource;
 
+        function toggleMovies(actorName) {
+            const movieList = document.getElementById(`movies-${actorName}`);
+            console.log(movieList);
+            if (movieList) {
+                movieList.style.display = movieList.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
         async function fetchActorCounts(event) {
             event.preventDefault();
             const username = document.getElementById("username").value;
@@ -142,14 +159,16 @@
             const progressBar = document.getElementById("progress-bar");
             resultDiv.style.opacity = 0; // Start with hidden results
             resultDiv.innerHTML = ""; // Clear previous results
-            progressContainer.style.display = 'block'; // Show progress bar
+            resultDiv.classList.remove('error', 'success'); // Clear any previous success/error message
             progressBar.style.width = '0%'; // Reset progress bar
-
-            // Clear any previous success/error message
-            resultDiv.classList.remove('error', 'success');
+            progressContainer.style.display = 'block'; // Show progress bar
 
             // Open a connection to the server for receiving progress updates and results
-            eventSource = new EventSource(`/fetch-actor-counts?username=${encodeURIComponent(username)}&lastNMovies=${encodeURIComponent(lastNMovies)}`);
+            const params = new URLSearchParams({
+                username: encodeURIComponent(username),
+                lastNMovies: encodeURIComponent(lastNMovies),
+            });
+            eventSource = new EventSource(`/fetch-actor-counts?${params.toString()}`);
 
             var total = 0;
             eventSource.onmessage = function(event) {
@@ -158,21 +177,23 @@
                     total = data.total;
                 }
                 else if (data.progress) {
-                    // Progress update
                     const progress = (data.progress / total) * 100;
                     progressBar.style.width = `${Math.min(progress, 100)}%`; // Update the progress bar
                 }
                 else if (data.actors) {
-                    console.log(data);
-
-                    // Final result (actors data)
                     resultDiv.innerHTML = "<h3>Top Actors:</h3><ul>" +
-                        data.actors.map(actorEntry => `<li>${actorEntry.Name}: ${actorEntry.Count} appearances</li>`).join("") +
-                        "</ul>";
+                        data.actors.map(actorEntry => `
+                            <li class="actor-entry" onclick="toggleMovies('${actorEntry.Name}')">
+                                ${actorEntry.Name}: ${actorEntry.Movies.length} appearances
+                                <ul id="movies-${actorEntry.Name}" class="movie-list" style="display: none">
+                                    ${actorEntry.Movies.map(movie => `<li>${movie}</li>`).join('')}
+                                </ul>
+                            </li>`
+                        ).join("") + "</ul>";
                     resultDiv.classList.add('success');
-                    eventSource.close(); // Close the EventSource connection once done
-                    progressContainer.style.display = 'none'; // Hide progress bar
-                    resultDiv.style.opacity = 1; // Show results with fade-in effect
+                    eventSource.close();
+                    progressContainer.style.display = 'none';
+                    resultDiv.style.opacity = 1;
                 }
             };
 
@@ -180,9 +201,9 @@
                 console.error("Error receiving progress updates.");
                 resultDiv.innerHTML = "Error"
                 resultDiv.classList.add('error');
-                eventSource.close(); // Close the connection in case of error
-                progressContainer.style.display = 'none'; // Hide progress bar
-                resultDiv.style.opacity = 1; // Show results with fade-in effect
+                eventSource.close();
+                progressContainer.style.display = 'none';
+                resultDiv.style.opacity = 1;
             };
         }
     </script>
@@ -200,12 +221,10 @@
             <button type="submit">Submit</button>
         </form>
 
-        <!-- Progress Bar -->
         <div id="progress-container" class="progress-container">
             <div id="progress-bar" class="progress-bar"></div>
         </div>
         
-        <!-- Results will be shown here -->
         <div id="results"></div>
     </div>
 </body>

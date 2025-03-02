@@ -11,23 +11,27 @@ import (
 	"time"
 )
 
-func fetchActors(slug string) []string {
-	var url string
-	var body []byte
-	url = fmt.Sprintf("https://api.themoviedb.org/3/search/movie?query=%s", slug)
-	body = fetchTMDBResponseBody(url)
+type MovieSearchResult struct {
+	ID    int    `json:"id"`
+	Title string `json:"title"`
+}
 
-	var result struct {
-		Results []struct {
-			ID int `json:"id"`
-		} `json:"results"`
-	}
+type MovieSearchResults struct {
+	Results []MovieSearchResult `json:"results"`
+}
+
+func searchMovie(slug string) (*MovieSearchResults, error) {
+	url := fmt.Sprintf("https://api.themoviedb.org/3/search/movie?query=%s", slug)
+	body := fetchTMDBResponseBody(url)
+
+	var result MovieSearchResults
 
 	if err := json.Unmarshal(body, &result); err != nil {
 		slog.Error("Error parsing TMDB JSON", "error", err)
-		return nil
+		return nil, err
 	}
 
+	// Incompatible film slug?
 	if len(result.Results) == 0 {
 		lastHyphen := strings.LastIndex(slug, "-")
 		if lastHyphen != -1 {
@@ -38,38 +42,37 @@ func fetchActors(slug string) []string {
 
 			if err := json.Unmarshal(body, &result); err != nil {
 				slog.Error("Error parsing TMDB JSON", "error", err)
-				return nil
+				return nil, err
 			}
 			if len(result.Results) == 0 {
 				slog.Error("Movie not found", "slug", slug, "name", name, "year", year)
-				return nil
+				return nil, fmt.Errorf("movie %s not found", slug)
 			}
 		}
-
 	}
 
-	movieID := result.Results[0].ID
-	url = fmt.Sprintf("https://api.themoviedb.org/3/movie/%d/credits", movieID)
-	body = fetchTMDBResponseBody(url)
+	return &result, nil
+}
 
-	var castResult struct {
-		Cast []struct {
-			Name string `json:"name"`
-		} `json:"cast"`
-	}
+type CastMember struct {
+	Name string `json:"name"`
+}
 
-	if err := json.Unmarshal(body, &castResult); err != nil {
+type MovieCredits struct {
+	Cast []CastMember `json:"cast"`
+}
+
+func fetchMovieCredits(movieID int) (*MovieCredits, error) {
+	url := fmt.Sprintf("https://api.themoviedb.org/3/movie/%d/credits", movieID)
+	body := fetchTMDBResponseBody(url)
+
+	var result MovieCredits
+	if err := json.Unmarshal(body, &result); err != nil {
 		slog.Error("Error parsing TMDB JSON", "error", err)
-		return nil
+		return nil, err
 	}
 
-	var actors []string
-	for _, actor := range castResult.Cast {
-		actors = append(actors, actor.Name)
-	}
-
-	return actors
-
+	return &result, nil
 }
 
 func fetchTMDBResponseBody(url string) []byte {
@@ -91,6 +94,7 @@ func fetchTMDBResponseBody(url string) []byte {
 		slog.Error("Error fetching TMDB data", "error", err)
 		return nil
 	}
+	defer resp.Body.Close()
 	time.Sleep(requestInterval) // Rate limit API calls
 
 	body, err := io.ReadAll(resp.Body)
