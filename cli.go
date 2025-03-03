@@ -18,15 +18,15 @@ func cli() {
 		return
 	}
 
-	actorCounts := fetchActorCounts(*username, *lastNMovies, nil)
+	actors := fetchActors(*username, *lastNMovies, nil)
 
 	// Output top 10 actors
-	printTopActors(actorCounts)
+	printTopActors(actors)
 }
 
-func printTopActors(actorCounts []actorEntry) {
+func printTopActors(actors []actorDetails) {
 	fmt.Println("Top 10 Actor appearance counts:")
-	for i, entry := range actorCounts {
+	for i, entry := range actors {
 		if i == 0 && len(entry.Movies) == 1 {
 			fmt.Printf("Actorigami!")
 		}

@@ -11,7 +11,12 @@ type FilmDetails struct {
 	Cast  []string
 }
 
-func fetchActorCounts(username string, lastNMovies int, w *http.ResponseWriter) []actorEntry {
+type actorDetails struct {
+	Name   string
+	Movies []string
+}
+
+func fetchActors(username string, lastNMovies int, w *http.ResponseWriter) []actorDetails {
 	filmSlugs := fetchFilmSlugs(username)
 
 	if lastNMovies > 0 && lastNMovies < len(filmSlugs) {
@@ -24,8 +29,7 @@ func fetchActorCounts(username string, lastNMovies int, w *http.ResponseWriter) 
 		})
 	}
 
-	actorCounts := make(map[string][]string)
-
+	actors := make(map[string]*actorDetails)
 	for i, slug := range filmSlugs {
 		cacheMutex.Lock()
 		cachedData, found := cache[slug]
@@ -33,11 +37,18 @@ func fetchActorCounts(username string, lastNMovies int, w *http.ResponseWriter) 
 
 		if found {
 			slog.Info("Cache hit", "slug", slug)
-			for _, actor := range cachedData.Cast {
-				actorCounts[actor] = append(actorCounts[actor], cachedData.Title)
+
+			for _, actorName := range cachedData.Cast {
+				actor, found := actors[actorName]
+				if !found {
+					actors[actorName] = &actorDetails{Name: actorName}
+					actor = actors[actorName]
+				}
+				actor.Movies = append(actor.Movies, cachedData.Title)
 			}
 		} else {
 			slog.Info("Cache miss", "slug", slug)
+
 			movieResults, err := searchMovie(slug)
 			if err != nil || len(movieResults.Results) == 0 {
 				slog.Error("Error searching movie", "slug", slug)
@@ -45,21 +56,28 @@ func fetchActorCounts(username string, lastNMovies int, w *http.ResponseWriter) 
 			}
 
 			topMovieResult := movieResults.Results[0]
+
 			castResult, err := fetchMovieCredits(topMovieResult.ID)
 			if err != nil {
 				slog.Error("Error fetching cast for movie", "ID", topMovieResult.ID, "title", topMovieResult.Title)
 				continue
 			}
 
-			var actorList []string
+			var actorNames []string
 			for _, castMember := range castResult.Cast {
-				actorCounts[castMember.Name] = append(actorCounts[castMember.Name], topMovieResult.Title)
-				actorList = append(actorList, castMember.Name)
+				actorName := castMember.Name
+				actor, found := actors[actorName]
+				if !found {
+					actors[actorName] = &actorDetails{Name: actorName}
+					actor = actors[actorName]
+				}
+				actor.Movies = append(actor.Movies, topMovieResult.Title)
+				actorNames = append(actorNames, actorName)
 			}
 
 			// Store result in cache
 			cacheMutex.Lock()
-			cache[slug] = FilmDetails{Title: topMovieResult.Title, Cast: actorList}
+			cache[slug] = FilmDetails{Title: topMovieResult.Title, Cast: actorNames}
 			cacheMutex.Unlock()
 		}
 
@@ -70,30 +88,25 @@ func fetchActorCounts(username string, lastNMovies int, w *http.ResponseWriter) 
 		}
 	}
 
-	sortedActors := cleanActorMovies(actorCounts)
+	cleanedActors := cleanActors(actors)
 
 	saveCache()
 
-	return sortedActors
+	return cleanedActors
 }
 
-type actorEntry struct {
-	Name   string
-	Movies []string
-}
-
-func cleanActorMovies(actorMovies map[string][]string) []actorEntry {
+func cleanActors(actors map[string]*actorDetails) []actorDetails {
 	// Filter out actors appearing only once and sort by movies descending
-	var sortedActors []actorEntry
-	for actor, movies := range actorMovies {
-		if len(movies) > 1 {
-			sortedActors = append(sortedActors, actorEntry{Name: actor, Movies: movies})
+	var cleanedActors []actorDetails
+	for _, actorDetails := range actors {
+		if len(actorDetails.Movies) > 1 {
+			cleanedActors = append(cleanedActors, *actorDetails)
 		}
 	}
 
-	sort.Slice(sortedActors, func(i, j int) bool {
-		return len(sortedActors[i].Movies) > len(sortedActors[j].Movies)
+	sort.Slice(cleanedActors, func(i, j int) bool {
+		return len(cleanedActors[i].Movies) > len(cleanedActors[j].Movies)
 	})
 
-	return sortedActors
+	return cleanedActors
 }

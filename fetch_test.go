@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestFetchActorCounts(t *testing.T) {
+func TestFetchActors(t *testing.T) {
 	initialGetTMDBAccessToken := getTMDBAccessToken
 	defer func() { getTMDBAccessToken = initialGetTMDBAccessToken }()
 	getTMDBAccessToken = func() string { return "TMDB_ACCESS_TOKEN" }
@@ -69,16 +69,16 @@ func TestFetchActorCounts(t *testing.T) {
 	}
 	defer func() { cache = initialCache }()
 
-	actualActorCounts := fetchActorCounts("testUser", 2, nil)
+	actualActors := fetchActors("testUser", 2, nil)
 
-	expectedActorCounts := []actorEntry{
+	expectedActors := []actorDetails{
 		{Name: "Tom Hanks", Movies: []string{"Toy Story", "Saving Private Ryan"}},
 	}
-	actorCountsAreEqual := slices.EqualFunc(expectedActorCounts, actualActorCounts, func(x actorEntry, y actorEntry) bool {
+	actorsAreEqual := slices.EqualFunc(expectedActors, actualActors, func(x actorDetails, y actorDetails) bool {
 		return x.Name == y.Name && reflect.DeepEqual(x.Movies, y.Movies)
 	})
-	if !actorCountsAreEqual {
-		t.Errorf("Expected actorCounts %v, got %v", expectedActorCounts, actualActorCounts)
+	if !actorsAreEqual {
+		t.Errorf("Expected actors %v, got %v", expectedActors, actualActors)
 	}
 
 	for key := range actualHTTPCallCounts {
@@ -89,7 +89,7 @@ func TestFetchActorCounts(t *testing.T) {
 }
 
 // These errors could cause SIGSEGV if not handled
-func TestFetchActorCounts_ErrorSearchingMovies(t *testing.T) {
+func TestFetchActors_ErrorSearchingMovies(t *testing.T) {
 	initialGetTMDBAccessToken := getTMDBAccessToken
 	defer func() { getTMDBAccessToken = initialGetTMDBAccessToken }()
 	getTMDBAccessToken = func() string { return "TMDB_ACCESS_TOKEN" }
@@ -135,14 +135,14 @@ func TestFetchActorCounts_ErrorSearchingMovies(t *testing.T) {
 	cache = map[string]FilmDetails{}
 	defer func() { cache = initialCache }()
 
-	actualActorCounts := fetchActorCounts("testUser", 1, nil)
+	actualActors := fetchActors("testUser", 1, nil)
 
-	expectedActorCounts := []actorEntry{}
-	actorCountsAreEqual := slices.EqualFunc(expectedActorCounts, actualActorCounts, func(x actorEntry, y actorEntry) bool {
+	expectedActors := []actorDetails{}
+	actorsAreEqual := slices.EqualFunc(expectedActors, actualActors, func(x actorDetails, y actorDetails) bool {
 		return x.Name == y.Name && reflect.DeepEqual(x.Movies, y.Movies)
 	})
-	if !actorCountsAreEqual {
-		t.Errorf("Expected actorCounts %v, got %v", expectedActorCounts, actualActorCounts)
+	if !actorsAreEqual {
+		t.Errorf("Expected actors %v, got %v", expectedActors, actualActors)
 	}
 
 	for key := range actualHTTPCallCounts {
@@ -152,7 +152,7 @@ func TestFetchActorCounts_ErrorSearchingMovies(t *testing.T) {
 	}
 }
 
-func TestFetchActorCounts_ErrorFetchingMovieCredits(t *testing.T) {
+func TestFetchActors_ErrorFetchingMovieCredits(t *testing.T) {
 	initialGetTMDBAccessToken := getTMDBAccessToken
 	defer func() { getTMDBAccessToken = initialGetTMDBAccessToken }()
 	getTMDBAccessToken = func() string { return "TMDB_ACCESS_TOKEN" }
@@ -201,14 +201,14 @@ func TestFetchActorCounts_ErrorFetchingMovieCredits(t *testing.T) {
 	cache = map[string]FilmDetails{}
 	defer func() { cache = initialCache }()
 
-	actualActorCounts := fetchActorCounts("testUser", 1, nil)
+	actualActors := fetchActors("testUser", 1, nil)
 
-	expectedActorCounts := []actorEntry{}
-	actorCountsAreEqual := slices.EqualFunc(expectedActorCounts, actualActorCounts, func(x actorEntry, y actorEntry) bool {
+	expectedActors := []actorDetails{}
+	actorsAreEqual := slices.EqualFunc(expectedActors, actualActors, func(x actorDetails, y actorDetails) bool {
 		return x.Name == y.Name && reflect.DeepEqual(x.Movies, y.Movies)
 	})
-	if !actorCountsAreEqual {
-		t.Errorf("Expected actorCounts %v, got %v", expectedActorCounts, actualActorCounts)
+	if !actorsAreEqual {
+		t.Errorf("Expected actors %v, got %v", expectedActors, actualActors)
 	}
 
 	for key := range actualHTTPCallCounts {

@@ -150,7 +150,7 @@
             }
         }
 
-        async function fetchActorCounts(event) {
+        async function fetchActors(event) {
             event.preventDefault();
             const username = document.getElementById("username").value;
             const lastNMovies = document.getElementById("lastNMovies").value;
@@ -168,7 +168,7 @@
                 username: encodeURIComponent(username),
                 lastNMovies: encodeURIComponent(lastNMovies),
             });
-            eventSource = new EventSource(`/fetch-actor-counts?${params.toString()}`);
+            eventSource = new EventSource(`/fetch-actors?${params.toString()}`);
 
             var total = 0;
             eventSource.onmessage = function(event) {
@@ -211,7 +211,7 @@
 <body>
     <div class="container">
         <h1>Actor Frequency</h1>
-        <form onsubmit="fetchActorCounts(event)">
+        <form onsubmit="fetchActors(event)">
             <label for="username">Enter Letterboxd Username:</label>
             <input type="text" id="username" required>
 

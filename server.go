@@ -10,7 +10,7 @@ import (
 
 func startServer() {
 	http.HandleFunc("/", homeHandler)
-	http.HandleFunc("/fetch-actor-counts", fetchActorCountsHandler)
+	http.HandleFunc("/fetch-actors", fetchActorsHandler)
 
 	port := "8080"
 	fmt.Println("Starting server on port", port)
@@ -27,8 +27,8 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, nil)
 }
 
-// fetchActorCountsHandler processes the form submission, fetches actor counts, and returns JSON
-func fetchActorCountsHandler(w http.ResponseWriter, r *http.Request) {
+// fetchActorsHandler processes the form submission, fetches actor details, and returns JSON
+func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
@@ -54,10 +54,10 @@ func fetchActorCountsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	actorCounts := fetchActorCounts(username, lastNMovies, &w)
+	actors := fetchActors(username, lastNMovies, &w)
 
-	sendMapAsSSEData(w, map[string][]actorEntry{
-		"actors": actorCounts,
+	sendMapAsSSEData(w, map[string][]actorDetails{
+		"actors": actors,
 	})
 
 	saveCache()
