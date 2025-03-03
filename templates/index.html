@@ -191,17 +191,21 @@
                     progressBar.style.width = `${Math.min(progress, 100)}%`; // Update the progress bar
                 }
                 else if (data.actors) {
-                    resultDiv.innerHTML = "<h3>Top Actors:</h3><ul>" +
-                        data.actors.map(actorEntry => `
-                            <li class="actor">
-                                <span class="clickable" onclick="toggleMovies('${actorEntry.Name}')">
-                                    ${actorEntry.Name}: ${actorEntry.Movies.length} appearances
-                                </span>
-                                <ul id="movies-${actorEntry.Name}" class="movie-list" style="display: none">
-                                    ${actorEntry.Movies.map(movieDetails => `<li><a href="https://letterboxd.com/film/${movieDetails.FilmSlug}" target="_blank">${movieDetails.Title}</a></li>`).join('')}
-                                </ul>
-                            </li>`
-                        ).join("") + "</ul>";
+                    if (data.actors.length == 0) {
+                        resultDiv.innerHTML = "<h3>Actorigami!</h3>";
+                    } else {
+                        resultDiv.innerHTML = "<h3>Top Actors:</h3><ul>" +
+                            data.actors.map(actorEntry => `
+                                <li class="actor">
+                                    <span class="clickable" onclick="toggleMovies('${actorEntry.Name}')">
+                                        ${actorEntry.Name}: ${actorEntry.Movies.length} appearances
+                                    </span>
+                                    <ul id="movies-${actorEntry.Name}" class="movie-list" style="display: none">
+                                        ${actorEntry.Movies.map(movieDetails => `<li><a href="https://letterboxd.com/film/${movieDetails.FilmSlug}" target="_blank">${movieDetails.Title}</a></li>`).join('')}
+                                    </ul>
+                                </li>`
+                            ).join("") + "</ul>";
+                    }
                     resultDiv.classList.add('success');
                     eventSource.close();
                     progressContainer.style.display = 'none';

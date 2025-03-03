@@ -102,7 +102,7 @@ func fetchActors(username string, lastNMovies int, w *http.ResponseWriter) []act
 
 func cleanActors(actors map[string]*actorDetails) []actorDetails {
 	// Filter out actors appearing only once and sort by movies descending
-	var cleanedActors []actorDetails
+	cleanedActors := []actorDetails{}
 	for _, actor := range actors {
 		if len(actor.Movies) > 1 {
 			cleanedActors = append(cleanedActors, *actor)
