@@ -69,7 +69,7 @@ func TestFetchActors(t *testing.T) {
 	}
 	defer func() { cache = initialCache }()
 
-	actualActors := fetchActors("testUser", 2, nil)
+	actualActors := fetchActors("testUser", "date", 2, nil)
 
 	expectedActors := []actorDetails{
 		{
@@ -141,7 +141,7 @@ func TestFetchActors_ErrorSearchingMovies(t *testing.T) {
 	cache = map[string]FilmDetails{}
 	defer func() { cache = initialCache }()
 
-	actualActors := fetchActors("testUser", 1, nil)
+	actualActors := fetchActors("testUser", "date", 1, nil)
 
 	expectedActors := []actorDetails{}
 	actorsAreEqual := slices.EqualFunc(expectedActors, actualActors, func(x actorDetails, y actorDetails) bool {
@@ -207,7 +207,7 @@ func TestFetchActors_ErrorFetchingMovieCredits(t *testing.T) {
 	cache = map[string]FilmDetails{}
 	defer func() { cache = initialCache }()
 
-	actualActors := fetchActors("testUser", 1, nil)
+	actualActors := fetchActors("testUser", "date", 1, nil)
 
 	expectedActors := []actorDetails{}
 	actorsAreEqual := slices.EqualFunc(expectedActors, actualActors, func(x actorDetails, y actorDetails) bool {

@@ -40,6 +40,12 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sortStrategy := r.FormValue("sortStrategy")
+	if sortStrategy == "" {
+		http.Error(w, "Sort strategy is required", http.StatusBadRequest)
+		return
+	}
+
 	lastNMoviesFormValue := r.FormValue("lastNMovies")
 	lastNMovies := -1
 	if lastNMoviesFormValue != "" {
@@ -54,7 +60,7 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	actors := fetchActors(username, lastNMovies, &w)
+	actors := fetchActors(username, sortStrategy, lastNMovies, &w)
 
 	sendMapAsSSEData(w, map[string][]actorDetails{
 		"actors": actors,

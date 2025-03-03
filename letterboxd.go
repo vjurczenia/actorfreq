@@ -11,9 +11,9 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-func fetchFilmSlugs(username string) []string {
+func fetchFilmSlugs(username string, sortStrategy string) []string {
 	// Fetch film slugs and page count from first page
-	doc := fetchFilmsPageDoc(username, 1)
+	doc := fetchFilmsPageDoc(username, sortStrategy, 1)
 	filmSlugsOnPage := extractFilmSlugs(doc)
 	filmSlugsByPage := map[int][]string{
 		1: filmSlugsOnPage,
@@ -31,7 +31,7 @@ func fetchFilmSlugs(username string) []string {
 		wg.Add(1)
 		go func(username string, page int) {
 			defer wg.Done()
-			doc := fetchFilmsPageDoc(username, page)
+			doc := fetchFilmsPageDoc(username, sortStrategy, page)
 			filmSlugsOnPage := extractFilmSlugs(doc)
 			mu.Lock()
 			filmSlugsByPage[page] = filmSlugsOnPage
@@ -41,7 +41,7 @@ func fetchFilmSlugs(username string) []string {
 
 	// Verify that we didn't miss any pages sequentially
 	for page := numPages + 1; true; page++ {
-		doc := fetchFilmsPageDoc(username, page)
+		doc := fetchFilmsPageDoc(username, sortStrategy, page)
 		filmSlugsOnPage := extractFilmSlugs(doc)
 		if len(filmSlugsOnPage) == 0 {
 			slog.Info("No more film slugs found", "username", username, "page", page)
@@ -69,8 +69,8 @@ func fetchFilmSlugs(username string) []string {
 	return filmSlugs
 }
 
-func fetchFilmsPageDoc(username string, page int) *goquery.Document {
-	url := fmt.Sprintf("https://letterboxd.com/%s/films/by/date/page/%d", username, page)
+func fetchFilmsPageDoc(username string, sortStrategy string, page int) *goquery.Document {
+	url := fmt.Sprintf("https://letterboxd.com/%s/films/by/%s/page/%d", username, sortStrategy, page)
 	resp, err := http.Get(url)
 	if err != nil {
 		slog.Error("Error fetching URL", "error", err)

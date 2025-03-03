@@ -47,7 +47,7 @@ func TestFetchFilmSlugs(t *testing.T) {
 		}, nil
 	})
 
-	actualFilmSlugs := fetchFilmSlugs("testUser")
+	actualFilmSlugs := fetchFilmSlugs("testUser", "date")
 
 	expectedFilmSlugs := []string{
 		"saving-private-ryan", "forrest-gump", "toy-story",

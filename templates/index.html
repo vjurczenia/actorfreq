@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -43,7 +44,8 @@
             text-align: left;
         }
 
-        input[type="text"], input[type="number"] {
+        input[type="text"],
+        input[type="number"] {
             width: 100%;
             padding: 12px;
             font-size: 1rem;
@@ -55,7 +57,8 @@
             transition: border-color 0.3s ease;
         }
 
-        input[type="text"]:focus, input[type="number"]:focus {
+        input[type="text"]:focus,
+        input[type="number"]:focus {
             border-color: #4e73df;
         }
 
@@ -85,6 +88,63 @@
             color: #555;
         }
 
+        /* Select Field */
+        /* Hide the default select but keep functionality */
+        select {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        select::after {
+            content: attr(data-selected-text);
+            /* Use JavaScript-modified value */
+        }
+
+        select:focus {
+            border-color: #4e73df;
+            box-shadow: 0 0 5px rgba(78, 115, 223, 0.5);
+        }
+
+        optgroup {
+            font-weight: bold;
+            color: #555;
+        }
+
+        option {
+            padding: 10px;
+        }
+
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        #selected-value {
+            display: block;
+            padding: 12px;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+            color: #333;
+            cursor: pointer;
+            text-align: left;
+
+            /* Custom arrow */
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23444'%3E%3Cpath d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+
         /* Results Section */
         #results {
             margin-top: 20px;
@@ -92,8 +152,10 @@
             font-size: 1rem;
             transition: opacity 0.5s ease;
             opacity: 0;
-            max-height: 300px; /* Limit the height */
-            overflow-y: auto; /* Enable vertical scrolling */
+            max-height: 300px;
+            /* Limit the height */
+            overflow-y: auto;
+            /* Enable vertical scrolling */
         }
 
         h3 {
@@ -150,8 +212,6 @@
         }
     </style>
     <script>
-        let eventSource;
-
         function toggleMovies(actorName) {
             const movieList = document.getElementById(`movies-${actorName}`);
             console.log(movieList);
@@ -160,9 +220,12 @@
             }
         }
 
+        let eventSource;
+
         async function fetchActors(event) {
             event.preventDefault();
             const username = document.getElementById("username").value;
+            const sortStrategy = document.getElementById("sortStrategy").value;
             const lastNMovies = document.getElementById("lastNMovies").value;
             const resultDiv = document.getElementById("results");
             const progressContainer = document.getElementById("progress-container");
@@ -176,12 +239,13 @@
             // Open a connection to the server for receiving progress updates and results
             const params = new URLSearchParams({
                 username: encodeURIComponent(username),
+                sortStrategy: encodeURIComponent(sortStrategy),
                 lastNMovies: encodeURIComponent(lastNMovies),
             });
             eventSource = new EventSource(`/fetch-actors?${params.toString()}`);
 
             var total = 0;
-            eventSource.onmessage = function(event) {
+            eventSource.onmessage = function (event) {
                 const data = JSON.parse(event.data);
                 if (data.total) {
                     total = data.total;
@@ -213,7 +277,7 @@
                 }
             };
 
-            eventSource.onerror = function() {
+            eventSource.onerror = function () {
                 console.error("Error receiving progress updates.");
                 resultDiv.innerHTML = "Error"
                 resultDiv.classList.add('error');
@@ -224,6 +288,7 @@
         }
     </script>
 </head>
+
 <body>
     <div class="container">
         <h1>Actor Frequency</h1>
@@ -231,7 +296,48 @@
             <label for="username">Enter Letterboxd Username:</label>
             <input type="text" id="username" required>
 
-            <label for="lastNMovies">Number of Recent Movies to Consider:</label>
+            <label for="sortStrategy">Sort By:</label>
+            <div class="select-wrapper">
+                <span id="selected-value">Film Popularity</span> <!-- Default display -->
+                <select id="sortStrategy">
+                    <option value="name">Film Name</option>
+                    <option value="popular" selected>Film Popularity</option>
+                    <option value="shuffle">Shuffle</option>
+
+                    <optgroup label="When Added">
+                        <option value="date">Newest First</option>
+                        <option value="date-earliest">Earliest First</option>
+                    </optgroup>
+
+                    <optgroup label="When Rated">
+                        <option value="rated-date">Newest First</option>
+                        <option value="rated-date-earliest">Earliest First</option>
+                    </optgroup>
+
+                    <optgroup label="Release Date">
+                        <option value="release">Newest First</option>
+                        <option value="release-earliest">Earliest First</option>
+                    </optgroup>
+
+                    <optgroup label="Average Rating">
+                        <option value="rating">Highest First</option>
+                        <option value="rating-lowest">Lowest First</option>
+                    </optgroup>
+
+                    <optgroup label="User's Rating">
+                        <option value="entry-rating">Highest First</option>
+                        <option value="entry-rating-lowest">Lowest First</option>
+                    </optgroup>
+
+                    <optgroup label="Film Length">
+                        <option value="shortest">Shortest First</option>
+                        <option value="longest">Longest First</option>
+                    </optgroup>
+                </select>
+            </div>
+
+
+            <label for="lastNMovies">Number of Movies to Consider:</label>
             <input type="number" id="lastNMovies" placeholder="Optional (considers all by default)">
 
             <button type="submit">Submit</button>
@@ -240,8 +346,19 @@
         <div id="progress-container" class="progress-container">
             <div id="progress-bar" class="progress-bar"></div>
         </div>
-        
+
         <div id="results"></div>
     </div>
 </body>
+<script>
+    document.getElementById("sortStrategy").addEventListener("change", function () {
+        const selectedOption = this.options[this.selectedIndex];
+        const optgroup = selectedOption.parentElement.label || ""; // Get the optgroup label if it exists
+        const value = selectedOption.textContent;
+        const displayText = optgroup ? `${optgroup} - ${value}` : value;
+
+        document.getElementById("selected-value").textContent = displayText;
+    });
+</script>
+
 </html>

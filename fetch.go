@@ -21,8 +21,8 @@ type movieDetails struct {
 	Title    string
 }
 
-func fetchActors(username string, lastNMovies int, w *http.ResponseWriter) []actorDetails {
-	filmSlugs := fetchFilmSlugs(username)
+func fetchActors(username string, sortStrategy string, lastNMovies int, w *http.ResponseWriter) []actorDetails {
+	filmSlugs := fetchFilmSlugs(username, sortStrategy)
 
 	if lastNMovies > 0 && lastNMovies < len(filmSlugs) {
 		filmSlugs = filmSlugs[:lastNMovies]
