@@ -75,6 +75,16 @@
             background-color: #3578e5;
         }
 
+        .clickable {
+            cursor: pointer;
+            color: #333;
+            transition: color 0.3s ease-in-out;
+        }
+
+        .clickable:hover {
+            color: #555;
+        }
+
         /* Results Section */
         #results {
             margin-top: 20px;
@@ -96,12 +106,12 @@
             margin: 0;
         }
 
-        li.actor-entry {
+        li.actor {
             padding: 8px;
             border-bottom: 1px solid #eee;
         }
 
-        li.actor-entry:last-child {
+        li.actor:last-child {
             border-bottom: none;
         }
 
@@ -183,8 +193,10 @@
                 else if (data.actors) {
                     resultDiv.innerHTML = "<h3>Top Actors:</h3><ul>" +
                         data.actors.map(actorEntry => `
-                            <li class="actor-entry" onclick="toggleMovies('${actorEntry.Name}')">
-                                ${actorEntry.Name}: ${actorEntry.Movies.length} appearances
+                            <li class="actor">
+                                <span class="clickable" onclick="toggleMovies('${actorEntry.Name}')">
+                                    ${actorEntry.Name}: ${actorEntry.Movies.length} appearances
+                                </span>
                                 <ul id="movies-${actorEntry.Name}" class="movie-list" style="display: none">
                                     ${actorEntry.Movies.map(movie => `<li>${movie}</li>`).join('')}
                                 </ul>
