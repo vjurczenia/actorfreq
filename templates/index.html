@@ -198,7 +198,7 @@
                                     ${actorEntry.Name}: ${actorEntry.Movies.length} appearances
                                 </span>
                                 <ul id="movies-${actorEntry.Name}" class="movie-list" style="display: none">
-                                    ${actorEntry.Movies.map(movie => `<li>${movie}</li>`).join('')}
+                                    ${actorEntry.Movies.map(movieDetails => `<li><a href="https://letterboxd.com/film/${movieDetails.FilmSlug}" target="_blank">${movieDetails.Title}</a></li>`).join('')}
                                 </ul>
                             </li>`
                         ).join("") + "</ul>";

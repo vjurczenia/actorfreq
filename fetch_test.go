@@ -72,7 +72,13 @@ func TestFetchActors(t *testing.T) {
 	actualActors := fetchActors("testUser", 2, nil)
 
 	expectedActors := []actorDetails{
-		{Name: "Tom Hanks", Movies: []string{"Toy Story", "Saving Private Ryan"}},
+		{
+			Name: "Tom Hanks",
+			Movies: []movieDetails{
+				{FilmSlug: "toy-story", Title: "Toy Story"},
+				{FilmSlug: "saving-private-ryan", Title: "Saving Private Ryan"},
+			},
+		},
 	}
 	actorsAreEqual := slices.EqualFunc(expectedActors, actualActors, func(x actorDetails, y actorDetails) bool {
 		return x.Name == y.Name && reflect.DeepEqual(x.Movies, y.Movies)

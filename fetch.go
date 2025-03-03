@@ -13,7 +13,12 @@ type FilmDetails struct {
 
 type actorDetails struct {
 	Name   string
-	Movies []string
+	Movies []movieDetails
+}
+
+type movieDetails struct {
+	FilmSlug string
+	Title    string
 }
 
 func fetchActors(username string, lastNMovies int, w *http.ResponseWriter) []actorDetails {
@@ -44,7 +49,7 @@ func fetchActors(username string, lastNMovies int, w *http.ResponseWriter) []act
 					actors[actorName] = &actorDetails{Name: actorName}
 					actor = actors[actorName]
 				}
-				actor.Movies = append(actor.Movies, cachedData.Title)
+				actor.Movies = append(actor.Movies, movieDetails{FilmSlug: slug, Title: cachedData.Title})
 			}
 		} else {
 			slog.Info("Cache miss", "slug", slug)
@@ -71,7 +76,7 @@ func fetchActors(username string, lastNMovies int, w *http.ResponseWriter) []act
 					actors[actorName] = &actorDetails{Name: actorName}
 					actor = actors[actorName]
 				}
-				actor.Movies = append(actor.Movies, topMovieResult.Title)
+				actor.Movies = append(actor.Movies, movieDetails{FilmSlug: slug, Title: topMovieResult.Title})
 				actorNames = append(actorNames, actorName)
 			}
 
@@ -98,9 +103,9 @@ func fetchActors(username string, lastNMovies int, w *http.ResponseWriter) []act
 func cleanActors(actors map[string]*actorDetails) []actorDetails {
 	// Filter out actors appearing only once and sort by movies descending
 	var cleanedActors []actorDetails
-	for _, actorDetails := range actors {
-		if len(actorDetails.Movies) > 1 {
-			cleanedActors = append(cleanedActors, *actorDetails)
+	for _, actor := range actors {
+		if len(actor.Movies) > 1 {
+			cleanedActors = append(cleanedActors, *actor)
 		}
 	}
 
