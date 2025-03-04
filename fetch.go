@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"sort"
+	"sync"
 )
 
 type FilmDetails struct {
@@ -33,31 +34,42 @@ func fetchActors(username string, sortStrategy string, lastNMovies int, w *http.
 		})
 	}
 
+	var wg sync.WaitGroup
 	actors := make(map[string]*actorDetails)
-	for i, slug := range filmSlugs {
-		cacheMutex.Lock()
-		cachedData, found := cache[slug]
-		cacheMutex.Unlock()
+	var actorsMutex sync.Mutex
+	for _, slug := range filmSlugs {
+		wg.Add(1)
+		go func(slug string) {
+			defer wg.Done()
 
-		if !found {
-			cachedData = fetchFilmDetails(slug)
-		}
+			cacheMutex.Lock()
+			cachedData, found := cache[slug]
+			cacheMutex.Unlock()
 
-		for _, actorName := range cachedData.Cast {
-			actor, found := actors[actorName]
 			if !found {
-				actors[actorName] = &actorDetails{Name: actorName}
-				actor = actors[actorName]
+				cachedData = fetchFilmDetails(slug)
 			}
-			actor.Movies = append(actor.Movies, movieDetails{FilmSlug: slug, Title: cachedData.Title})
-		}
 
-		if w != nil {
-			sendMapAsSSEData(*w, map[string]int{
-				"progress": i + 1,
-			})
-		}
+			actorsMutex.Lock()
+			for _, actorName := range cachedData.Cast {
+				actor, found := actors[actorName]
+				if !found {
+					actors[actorName] = &actorDetails{Name: actorName}
+					actor = actors[actorName]
+				}
+				actor.Movies = append(actor.Movies, movieDetails{FilmSlug: slug, Title: cachedData.Title})
+			}
+			actorsMutex.Unlock()
+
+			if w != nil {
+				sendMapAsSSEData(*w, map[string]int{
+					"progress": 1,
+				})
+			}
+		}(slug)
 	}
+
+	wg.Wait()
 
 	cleanedActors := cleanActors(actors)
 

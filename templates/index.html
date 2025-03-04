@@ -245,14 +245,16 @@
             eventSource = new EventSource(`/fetch-actors?${params.toString()}`);
 
             var total = 0;
+            var progress = 0;
             eventSource.onmessage = function (event) {
                 const data = JSON.parse(event.data);
                 if (data.total) {
                     total = data.total;
                 }
                 else if (data.progress) {
-                    const progress = (data.progress / total) * 100;
-                    progressBar.style.width = `${Math.min(progress, 100)}%`; // Update the progress bar
+                    progress = progress + data.progress;
+                    const progress_percentage = (progress / total) * 100;
+                    progressBar.style.width = `${Math.min(progress_percentage, 100)}%`; // Update the progress bar
                 }
                 else if (data.actors) {
                     if (data.actors.length == 0) {
