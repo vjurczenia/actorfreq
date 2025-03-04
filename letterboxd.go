@@ -28,14 +28,14 @@ func fetchFilmSlugs(username string, sortStrategy string) []string {
 	var mu sync.Mutex
 	for page := 2; page <= numPages; page++ {
 		wg.Add(1)
-		go func(username string, page int) {
+		go func(page int) {
 			defer wg.Done()
 			doc := fetchFilmsPageDoc(username, sortStrategy, page)
 			filmSlugsOnPage := extractFilmSlugs(doc)
 			mu.Lock()
 			filmSlugsByPage[page] = filmSlugsOnPage
 			mu.Unlock()
-		}(username, page)
+		}(page)
 	}
 
 	// Verify that we didn't miss any pages sequentially
