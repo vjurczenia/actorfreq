@@ -8,7 +8,7 @@ import (
 )
 
 var cache = make(map[string]FilmDetails)
-var cacheMutex = &sync.Mutex{}
+var cacheMutex sync.Mutex
 
 const cacheFile = "cache.json"
 
