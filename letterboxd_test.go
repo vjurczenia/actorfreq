@@ -63,3 +63,97 @@ func TestFetchFilmSlugs(t *testing.T) {
 		}
 	}
 }
+
+func TestFetchFilmDetails(t *testing.T) {
+	actualHTTPCallCounts := make(map[string]int)
+	expectedHTTPCallCounts := map[string]int{
+		"https://letterboxd.com/film/toy-story/": 1,
+	}
+	for key := range expectedHTTPCallCounts {
+		actualHTTPCallCounts[key] = 0
+	}
+
+	initialTransport := http.DefaultTransport
+	defer func() { http.DefaultTransport = initialTransport }()
+	http.DefaultTransport = RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		urlString := req.URL.String()
+		var responseString string
+		switch urlString {
+		case "https://letterboxd.com/film/toy-story/":
+			responseString = `<h1 class="filmtitle">Toy Story</h1>` +
+				`<h1 class="filmtitle">NOT TOY STORY</h1>` +
+				`<a href="/actor/tom-hanks">Tom Hanks</a>`
+		default:
+			responseString = ""
+		}
+		actualHTTPCallCounts[urlString]++
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(responseString)),
+			Header:     make(http.Header),
+		}, nil
+	})
+
+	actualFilmDetails := fetchFilmDetails("toy-story")
+
+	expectedFilmDetails := FilmDetails{
+		Title: "Toy Story",
+		Cast:  []string{"Tom Hanks"},
+	}
+
+	if !reflect.DeepEqual(expectedFilmDetails, actualFilmDetails) {
+		t.Errorf("Expected filmSlugs %v, got %v", expectedFilmDetails, actualFilmDetails)
+	}
+
+	for key := range actualHTTPCallCounts {
+		if expectedHTTPCallCounts[key] != actualHTTPCallCounts[key] {
+			t.Errorf("Expected %d calls to %q, got %d", expectedHTTPCallCounts[key], key, actualHTTPCallCounts[key])
+		}
+	}
+}
+
+func TestFetchFilmDetails_NoValuesOnPage(t *testing.T) {
+	actualHTTPCallCounts := make(map[string]int)
+	expectedHTTPCallCounts := map[string]int{
+		"https://letterboxd.com/film/toy-story/": 1,
+	}
+	for key := range expectedHTTPCallCounts {
+		actualHTTPCallCounts[key] = 0
+	}
+
+	initialTransport := http.DefaultTransport
+	defer func() { http.DefaultTransport = initialTransport }()
+	http.DefaultTransport = RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		urlString := req.URL.String()
+		var responseString string
+		switch urlString {
+		case "https://letterboxd.com/film/toy-story/":
+			responseString = ""
+		default:
+			responseString = ""
+		}
+		actualHTTPCallCounts[urlString]++
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(responseString)),
+			Header:     make(http.Header),
+		}, nil
+	})
+
+	actualFilmDetails := fetchFilmDetails("toy-story")
+
+	expectedFilmDetails := FilmDetails{
+		Title: "toy-story",
+		Cast:  []string{},
+	}
+
+	if !reflect.DeepEqual(expectedFilmDetails, actualFilmDetails) {
+		t.Errorf("Expected filmSlugs %v, got %v", expectedFilmDetails, actualFilmDetails)
+	}
+
+	for key := range actualHTTPCallCounts {
+		if expectedHTTPCallCounts[key] != actualHTTPCallCounts[key] {
+			t.Errorf("Expected %d calls to %q, got %d", expectedHTTPCallCounts[key], key, actualHTTPCallCounts[key])
+		}
+	}
+}

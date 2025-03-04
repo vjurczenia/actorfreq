@@ -10,16 +10,11 @@ import (
 )
 
 func TestFetchActors(t *testing.T) {
-	initialGetTMDBAccessToken := getTMDBAccessToken
-	defer func() { getTMDBAccessToken = initialGetTMDBAccessToken }()
-	getTMDBAccessToken = func() string { return "TMDB_ACCESS_TOKEN" }
-
 	expectedHTTPCallCounts := map[string]int{
-		"https://letterboxd.com/testUser/films/by/date/page/1":      1,
-		"https://letterboxd.com/testUser/films/by/date/page/2":      1,
-		"https://letterboxd.com/testUser/films/by/date/page/3":      1,
-		"https://api.themoviedb.org/3/search/movie?query=toy-story": 1,
-		"https://api.themoviedb.org/3/movie/1234/credits":           1,
+		"https://letterboxd.com/testUser/films/by/date/page/1": 1,
+		"https://letterboxd.com/testUser/films/by/date/page/2": 1,
+		"https://letterboxd.com/testUser/films/by/date/page/3": 1,
+		"https://letterboxd.com/film/toy-story/":               1,
 	}
 	actualHTTPCallCounts := make(map[string]int)
 	for key := range expectedHTTPCallCounts {
@@ -41,10 +36,9 @@ func TestFetchActors(t *testing.T) {
 				`<div data-film-slug="forrest-gump" />`
 		case "https://letterboxd.com/testUser/films/by/date/page/3":
 			responseString = ""
-		case "https://api.themoviedb.org/3/search/movie?query=toy-story":
-			responseString = `{"results":[{"id":1234, "title": "Toy Story"}]}`
-		case "https://api.themoviedb.org/3/movie/1234/credits":
-			responseString = `{"cast": [{"name": "Tom Hanks"}]}`
+		case "https://letterboxd.com/film/toy-story/":
+			responseString = `<h1 class="filmtitle">Toy Story</h1>` +
+				`<a href="/actor/tom-hanks">Tom Hanks</a>`
 		default:
 			responseString = ""
 		}
@@ -80,136 +74,6 @@ func TestFetchActors(t *testing.T) {
 			},
 		},
 	}
-	actorsAreEqual := slices.EqualFunc(expectedActors, actualActors, func(x actorDetails, y actorDetails) bool {
-		return x.Name == y.Name && reflect.DeepEqual(x.Movies, y.Movies)
-	})
-	if !actorsAreEqual {
-		t.Errorf("Expected actors %v, got %v", expectedActors, actualActors)
-	}
-
-	for key := range actualHTTPCallCounts {
-		if expectedHTTPCallCounts[key] != actualHTTPCallCounts[key] {
-			t.Errorf("Expected %d calls to %q, got %d", expectedHTTPCallCounts[key], key, actualHTTPCallCounts[key])
-		}
-	}
-}
-
-// These errors could cause SIGSEGV if not handled
-func TestFetchActors_ErrorSearchingMovies(t *testing.T) {
-	initialGetTMDBAccessToken := getTMDBAccessToken
-	defer func() { getTMDBAccessToken = initialGetTMDBAccessToken }()
-	getTMDBAccessToken = func() string { return "TMDB_ACCESS_TOKEN" }
-
-	expectedHTTPCallCounts := map[string]int{
-		"https://letterboxd.com/testUser/films/by/date/page/1":      1,
-		"https://letterboxd.com/testUser/films/by/date/page/2":      1,
-		"https://api.themoviedb.org/3/search/movie?query=toy-story": 1,
-	}
-	actualHTTPCallCounts := make(map[string]int)
-	for key := range expectedHTTPCallCounts {
-		actualHTTPCallCounts[key] = 0
-	}
-
-	initialTransport := http.DefaultTransport
-	defer func() { http.DefaultTransport = initialTransport }()
-	http.DefaultTransport = RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
-		urlString := req.URL.String()
-		var responseString string
-		switch urlString {
-		case "https://letterboxd.com/testUser/films/by/date/page/1":
-			responseString = `<div data-film-slug="toy-story" />`
-		case "https://letterboxd.com/testUser/films/by/date/page/2":
-			responseString = ""
-		case "https://api.themoviedb.org/3/search/movie?query=toy-story":
-			responseString = ""
-		default:
-			responseString = ""
-		}
-		actualHTTPCallCounts[urlString]++
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(strings.NewReader(responseString)),
-			Header:     make(http.Header),
-		}, nil
-	})
-
-	initialSaveCache := saveCache
-	saveCache = func() {}
-	defer func() { saveCache = initialSaveCache }()
-
-	initialCache := cache
-	cache = map[string]FilmDetails{}
-	defer func() { cache = initialCache }()
-
-	actualActors := fetchActors("testUser", "date", 1, nil)
-
-	expectedActors := []actorDetails{}
-	actorsAreEqual := slices.EqualFunc(expectedActors, actualActors, func(x actorDetails, y actorDetails) bool {
-		return x.Name == y.Name && reflect.DeepEqual(x.Movies, y.Movies)
-	})
-	if !actorsAreEqual {
-		t.Errorf("Expected actors %v, got %v", expectedActors, actualActors)
-	}
-
-	for key := range actualHTTPCallCounts {
-		if expectedHTTPCallCounts[key] != actualHTTPCallCounts[key] {
-			t.Errorf("Expected %d calls to %q, got %d", expectedHTTPCallCounts[key], key, actualHTTPCallCounts[key])
-		}
-	}
-}
-
-func TestFetchActors_ErrorFetchingMovieCredits(t *testing.T) {
-	initialGetTMDBAccessToken := getTMDBAccessToken
-	defer func() { getTMDBAccessToken = initialGetTMDBAccessToken }()
-	getTMDBAccessToken = func() string { return "TMDB_ACCESS_TOKEN" }
-
-	expectedHTTPCallCounts := map[string]int{
-		"https://letterboxd.com/testUser/films/by/date/page/1":      1,
-		"https://letterboxd.com/testUser/films/by/date/page/2":      1,
-		"https://api.themoviedb.org/3/search/movie?query=toy-story": 1,
-		"https://api.themoviedb.org/3/movie/1234/credits":           1,
-	}
-	actualHTTPCallCounts := make(map[string]int)
-	for key := range expectedHTTPCallCounts {
-		actualHTTPCallCounts[key] = 0
-	}
-
-	initialTransport := http.DefaultTransport
-	defer func() { http.DefaultTransport = initialTransport }()
-	http.DefaultTransport = RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
-		urlString := req.URL.String()
-		var responseString string
-		switch urlString {
-		case "https://letterboxd.com/testUser/films/by/date/page/1":
-			responseString = `<div data-film-slug="toy-story" />`
-		case "https://letterboxd.com/testUser/films/by/date/page/2":
-			responseString = ""
-		case "https://api.themoviedb.org/3/search/movie?query=toy-story":
-			responseString = `{"results":[{"id":1234, "title": "Toy Story"}]}`
-		case "https://api.themoviedb.org/3/movie/1234/credits":
-			responseString = ""
-		default:
-			responseString = ""
-		}
-		actualHTTPCallCounts[urlString]++
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(strings.NewReader(responseString)),
-			Header:     make(http.Header),
-		}, nil
-	})
-
-	initialSaveCache := saveCache
-	saveCache = func() {}
-	defer func() { saveCache = initialSaveCache }()
-
-	initialCache := cache
-	cache = map[string]FilmDetails{}
-	defer func() { cache = initialCache }()
-
-	actualActors := fetchActors("testUser", "date", 1, nil)
-
-	expectedActors := []actorDetails{}
 	actorsAreEqual := slices.EqualFunc(expectedActors, actualActors, func(x actorDetails, y actorDetails) bool {
 		return x.Name == y.Name && reflect.DeepEqual(x.Movies, y.Movies)
 	})

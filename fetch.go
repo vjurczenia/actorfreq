@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log/slog"
 	"net/http"
 	"sort"
 )
@@ -40,50 +39,17 @@ func fetchActors(username string, sortStrategy string, lastNMovies int, w *http.
 		cachedData, found := cache[slug]
 		cacheMutex.Unlock()
 
-		if found {
-			slog.Info("Cache hit", "slug", slug)
+		if !found {
+			cachedData = fetchFilmDetails(slug)
+		}
 
-			for _, actorName := range cachedData.Cast {
-				actor, found := actors[actorName]
-				if !found {
-					actors[actorName] = &actorDetails{Name: actorName}
-					actor = actors[actorName]
-				}
-				actor.Movies = append(actor.Movies, movieDetails{FilmSlug: slug, Title: cachedData.Title})
+		for _, actorName := range cachedData.Cast {
+			actor, found := actors[actorName]
+			if !found {
+				actors[actorName] = &actorDetails{Name: actorName}
+				actor = actors[actorName]
 			}
-		} else {
-			slog.Info("Cache miss", "slug", slug)
-
-			movieResults, err := searchMovie(slug)
-			if err != nil || len(movieResults.Results) == 0 {
-				slog.Error("Error searching movie", "slug", slug)
-				continue
-			}
-
-			topMovieResult := movieResults.Results[0]
-
-			castResult, err := fetchMovieCredits(topMovieResult.ID)
-			if err != nil {
-				slog.Error("Error fetching cast for movie", "ID", topMovieResult.ID, "title", topMovieResult.Title)
-				continue
-			}
-
-			var actorNames []string
-			for _, castMember := range castResult.Cast {
-				actorName := castMember.Name
-				actor, found := actors[actorName]
-				if !found {
-					actors[actorName] = &actorDetails{Name: actorName}
-					actor = actors[actorName]
-				}
-				actor.Movies = append(actor.Movies, movieDetails{FilmSlug: slug, Title: topMovieResult.Title})
-				actorNames = append(actorNames, actorName)
-			}
-
-			// Store result in cache
-			cacheMutex.Lock()
-			cache[slug] = FilmDetails{Title: topMovieResult.Title, Cast: actorNames}
-			cacheMutex.Unlock()
+			actor.Movies = append(actor.Movies, movieDetails{FilmSlug: slug, Title: cachedData.Title})
 		}
 
 		if w != nil {

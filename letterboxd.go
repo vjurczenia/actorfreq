@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log/slog"
-	"net/http"
 	"sort"
 	"strconv"
 	"sync"
@@ -71,25 +70,7 @@ func fetchFilmSlugs(username string, sortStrategy string) []string {
 
 func fetchFilmsPageDoc(username string, sortStrategy string, page int) *goquery.Document {
 	url := fmt.Sprintf("https://letterboxd.com/%s/films/by/%s/page/%d", username, sortStrategy, page)
-	resp, err := http.Get(url)
-	if err != nil {
-		slog.Error("Error fetching URL", "error", err)
-		return nil
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		slog.Error("Error: non-OK HTTP status", "status", resp.Status)
-		return nil
-	}
-
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
-	if err != nil {
-		slog.Error("Error loading HTML document", "error", err)
-		return nil
-	}
-
-	return doc
+	return fetchDoc(url)
 }
 
 func extractFilmSlugs(doc *goquery.Document) []string {
@@ -100,4 +81,28 @@ func extractFilmSlugs(doc *goquery.Document) []string {
 		}
 	})
 	return slugs
+}
+
+func fetchFilmDetails(slug string) FilmDetails {
+	url := fmt.Sprintf("https://letterboxd.com/film/%s/", slug)
+	doc := fetchDoc(url)
+
+	title := doc.Find("h1.filmtitle").First().Text()
+	if title == "" {
+		title = slug
+	}
+
+	cast := []string{}
+	doc.Find("a[href^='/actor/']").Each(func(i int, s *goquery.Selection) {
+		cast = append(cast, s.Text())
+	})
+
+	filmDetails := FilmDetails{Title: title, Cast: cast}
+
+	// Store result in cache
+	cacheMutex.Lock()
+	cache[slug] = filmDetails
+	cacheMutex.Unlock()
+
+	return filmDetails
 }
