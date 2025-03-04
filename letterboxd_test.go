@@ -82,6 +82,7 @@ func TestFetchFilmDetails(t *testing.T) {
 		case "https://letterboxd.com/film/toy-story/":
 			responseString = `<h1 class="filmtitle">Toy Story</h1>` +
 				`<h1 class="filmtitle">NOT TOY STORY</h1>` +
+				`<a href="/actor/tom-hanks">Tom Hanks</a>` +
 				`<a href="/actor/tom-hanks">Tom Hanks</a>`
 		default:
 			responseString = ""

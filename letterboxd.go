@@ -92,10 +92,15 @@ func fetchFilmDetails(slug string) FilmDetails {
 		title = slug
 	}
 
-	cast := []string{}
+	castMap := make(map[string]struct{})
 	doc.Find("a[href^='/actor/']").Each(func(i int, s *goquery.Selection) {
-		cast = append(cast, s.Text())
+		castMap[s.Text()] = struct{}{}
 	})
+
+	cast := []string{}
+	for actor := range castMap {
+		cast = append(cast, actor)
+	}
 
 	filmDetails := FilmDetails{Title: title, Cast: cast}
 
