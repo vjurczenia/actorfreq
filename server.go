@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"sync"
 )
 
 func startServer() {
@@ -69,8 +70,12 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 	saveCache()
 }
 
+var sseMutex sync.Mutex
+
 func sendMapAsSSEData[K comparable, V any](w http.ResponseWriter, m map[K]V) {
-	// Serialize the map to JSON
+	sseMutex.Lock()
+	defer sseMutex.Unlock()
+
 	md, err := json.Marshal(m)
 	if err != nil {
 		http.Error(w, "Failed to marshal JSON", http.StatusInternalServerError)
