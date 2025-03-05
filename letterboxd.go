@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"slices"
 	"sort"
 	"strconv"
 	"sync"
@@ -92,15 +93,13 @@ func fetchFilmDetails(slug string) FilmDetails {
 		title = slug
 	}
 
-	castMap := make(map[string]struct{})
-	doc.Find("a[href^='/actor/']").Each(func(i int, s *goquery.Selection) {
-		castMap[s.Text()] = struct{}{}
-	})
-
 	cast := []string{}
-	for actor := range castMap {
-		cast = append(cast, actor)
-	}
+	doc.Find("a[href^='/actor/']").Each(func(i int, s *goquery.Selection) {
+		actor := s.Text()
+		if !slices.Contains(cast, actor) {
+			cast = append(cast, actor)
+		}
+	})
 
 	filmDetails := FilmDetails{Title: title, Cast: cast}
 
