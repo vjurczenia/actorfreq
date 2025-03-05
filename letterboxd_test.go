@@ -82,8 +82,8 @@ func TestFetchFilmDetails(t *testing.T) {
 		case "https://letterboxd.com/film/toy-story/":
 			responseString = `<h1 class="filmtitle">Toy Story</h1>` +
 				`<h1 class="filmtitle">NOT TOY STORY</h1>` +
-				`<a href="/actor/tom-hanks">Tom Hanks</a>` +
-				`<a href="/actor/tom-hanks">Tom Hanks</a>`
+				`<a href="/actor/tom-hanks" title="Woody">Tom Hanks</a>` +
+				`<a href="/actor/tom-hanks" title="Another Role">Tom Hanks</a>`
 		default:
 			responseString = ""
 		}
@@ -99,7 +99,7 @@ func TestFetchFilmDetails(t *testing.T) {
 
 	expectedFilmDetails := FilmDetails{
 		Title: "Toy Story",
-		Cast:  []string{"Tom Hanks"},
+		Cast:  []Credit{{Actor: "Tom Hanks", Roles: []string{"Woody", "Another Role"}}},
 	}
 
 	if !reflect.DeepEqual(expectedFilmDetails, actualFilmDetails) {
@@ -145,7 +145,7 @@ func TestFetchFilmDetails_NoValuesOnPage(t *testing.T) {
 
 	expectedFilmDetails := FilmDetails{
 		Title: "toy-story",
-		Cast:  []string{},
+		Cast:  []Credit{},
 	}
 
 	if !reflect.DeepEqual(expectedFilmDetails, actualFilmDetails) {

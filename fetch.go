@@ -5,11 +5,6 @@ import (
 	"sort"
 )
 
-type FilmDetails struct {
-	Title string
-	Cast  []string
-}
-
 type actorDetails struct {
 	Name   string
 	Movies []movieDetails
@@ -18,6 +13,7 @@ type actorDetails struct {
 type movieDetails struct {
 	FilmSlug string
 	Title    string
+	Roles    []string
 }
 
 func fetchActors(username string, sortStrategy string, lastNMovies int, w *http.ResponseWriter) []actorDetails {
@@ -43,13 +39,17 @@ func fetchActors(username string, sortStrategy string, lastNMovies int, w *http.
 			cachedData = fetchFilmDetails(slug)
 		}
 
-		for _, actorName := range cachedData.Cast {
-			actor, found := actors[actorName]
+		for _, credit := range cachedData.Cast {
+			actor, found := actors[credit.Actor]
 			if !found {
-				actors[actorName] = &actorDetails{Name: actorName}
-				actor = actors[actorName]
+				actors[credit.Actor] = &actorDetails{Name: credit.Actor}
+				actor = actors[credit.Actor]
 			}
-			actor.Movies = append(actor.Movies, movieDetails{FilmSlug: slug, Title: cachedData.Title})
+			actor.Movies = append(actor.Movies, movieDetails{
+				FilmSlug: slug,
+				Title:    cachedData.Title,
+				Roles:    credit.Roles,
+			})
 		}
 
 		if w != nil {

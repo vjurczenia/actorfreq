@@ -84,6 +84,16 @@ func extractFilmSlugs(doc *goquery.Document) []string {
 	return slugs
 }
 
+type Credit struct {
+	Actor string
+	Roles []string
+}
+
+type FilmDetails struct {
+	Title string
+	Cast  []Credit
+}
+
 func fetchFilmDetails(slug string) FilmDetails {
 	url := fmt.Sprintf("https://letterboxd.com/film/%s/", slug)
 	doc := fetchDoc(url)
@@ -93,13 +103,24 @@ func fetchFilmDetails(slug string) FilmDetails {
 		title = slug
 	}
 
-	cast := []string{}
+	actors := []string{}
+	roles := make(map[string][]string)
 	doc.Find("a[href^='/actor/']").Each(func(i int, s *goquery.Selection) {
 		actor := s.Text()
-		if !slices.Contains(cast, actor) {
-			cast = append(cast, actor)
+		if !slices.Contains(actors, actor) {
+			actors = append(actors, actor)
+		}
+
+		role, roleExists := s.Attr("title")
+		if roleExists && !slices.Contains(roles[actor], role) {
+			roles[actor] = append(roles[actor], role)
 		}
 	})
+
+	cast := []Credit{}
+	for _, actor := range actors {
+		cast = append(cast, Credit{Actor: actor, Roles: roles[actor]})
+	}
 
 	filmDetails := FilmDetails{Title: title, Cast: cast}
 

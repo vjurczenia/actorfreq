@@ -38,7 +38,7 @@ func TestFetchActors(t *testing.T) {
 			responseString = ""
 		case "https://letterboxd.com/film/toy-story/":
 			responseString = `<h1 class="filmtitle">Toy Story</h1>` +
-				`<a href="/actor/tom-hanks">Tom Hanks</a>`
+				`<a href="/actor/tom-hanks" title="Woody">Tom Hanks</a>`
 		default:
 			responseString = ""
 		}
@@ -58,7 +58,10 @@ func TestFetchActors(t *testing.T) {
 	cache = map[string]FilmDetails{
 		"saving-private-ryan": {
 			Title: "Saving Private Ryan",
-			Cast:  []string{"Tom Hanks", "Matt Damon"},
+			Cast: []Credit{
+				{Actor: "Tom Hanks", Roles: []string{"Captain Miller"}},
+				{Actor: "Matt Damon", Roles: []string{"Private Ryan"}},
+			},
 		},
 	}
 	defer func() { cache = initialCache }()
@@ -69,8 +72,8 @@ func TestFetchActors(t *testing.T) {
 		{
 			Name: "Tom Hanks",
 			Movies: []movieDetails{
-				{FilmSlug: "toy-story", Title: "Toy Story"},
-				{FilmSlug: "saving-private-ryan", Title: "Saving Private Ryan"},
+				{FilmSlug: "toy-story", Title: "Toy Story", Roles: []string{"Woody"}},
+				{FilmSlug: "saving-private-ryan", Title: "Saving Private Ryan", Roles: []string{"Captain Miller"}},
 			},
 		},
 	}
