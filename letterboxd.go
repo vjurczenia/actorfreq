@@ -6,10 +6,10 @@ import (
 	"slices"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -89,7 +89,7 @@ func extractFilmSlugs(doc *goquery.Document) []string {
 type Credit struct {
 	gorm.Model
 	Actor         string
-	Roles         pq.StringArray `gorm:"type:text[]"`
+	Roles         string
 	FilmDetailsID uint
 }
 
@@ -125,16 +125,12 @@ func fetchFilmDetails(slug string) FilmDetails {
 
 	cast := []Credit{}
 	for _, actor := range actors {
-		cast = append(cast, Credit{Actor: actor, Roles: roles[actor]})
+		cast = append(cast, Credit{Actor: actor, Roles: strings.Join(roles[actor], " / ")})
 	}
 
 	filmDetails := FilmDetails{Slug: slug, Title: title, Cast: cast}
 
-	cacheResult(filmDetails)
+	db.Create(&filmDetails)
 
 	return filmDetails
-}
-
-var cacheResult = func(fd FilmDetails) {
-	db.Create(&fd)
 }

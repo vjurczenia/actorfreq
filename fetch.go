@@ -13,7 +13,7 @@ type actorDetails struct {
 type movieDetails struct {
 	FilmSlug string
 	Title    string
-	Roles    []string
+	Roles    string
 }
 
 func fetchActors(username string, sortStrategy string, lastNMovies int, w *http.ResponseWriter) []actorDetails {
@@ -55,7 +55,7 @@ func fetchActors(username string, sortStrategy string, lastNMovies int, w *http.
 	return cleanActors(actors)
 }
 
-var getFilm = func(slug string) FilmDetails {
+func getFilm(slug string) FilmDetails {
 	var films []FilmDetails
 	result := db.Preload("Cast").Where("slug = ?", slug).Limit(1).Find(&films)
 	if result.Error != nil || result.RowsAffected == 0 {

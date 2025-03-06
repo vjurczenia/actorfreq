@@ -27,6 +27,10 @@ func setUpDB() {
 		slog.Error("Failed to connect to the database:", "error", err)
 	}
 
+	migrateDB()
+}
+
+func migrateDB() {
 	db.AutoMigrate(&FilmDetails{})
 	db.AutoMigrate(&Credit{})
 }

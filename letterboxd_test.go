@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -95,19 +96,23 @@ func TestFetchFilmDetails(t *testing.T) {
 		}, nil
 	})
 
-	initialCacheResult := cacheResult
-	cacheResult = func(fd FilmDetails) {}
-	defer func() { cacheResult = initialCacheResult }()
+	setupTestDB()
 
 	actualFilmDetails := fetchFilmDetails("toy-story")
 
 	expectedFilmDetails := FilmDetails{
 		Slug:  "toy-story",
 		Title: "Toy Story",
-		Cast:  []Credit{{Actor: "Tom Hanks", Roles: []string{"Woody", "Another Role"}}},
+		Cast:  []Credit{{Actor: "Tom Hanks", Roles: "Woody / Another Role"}},
 	}
 
-	if !reflect.DeepEqual(expectedFilmDetails, actualFilmDetails) {
+	filmDetailsEqual := expectedFilmDetails.Slug == actualFilmDetails.Slug &&
+		expectedFilmDetails.Title == actualFilmDetails.Title &&
+		slices.EqualFunc(expectedFilmDetails.Cast, actualFilmDetails.Cast, func(a, b Credit) bool {
+			return a.Actor == b.Actor && a.Roles == b.Roles
+		})
+
+	if !filmDetailsEqual {
 		t.Errorf("Expected filmSlugs %v, got %v", expectedFilmDetails, actualFilmDetails)
 	}
 
@@ -146,9 +151,7 @@ func TestFetchFilmDetails_NoValuesOnPage(t *testing.T) {
 		}, nil
 	})
 
-	initialCacheResult := cacheResult
-	cacheResult = func(fd FilmDetails) {}
-	defer func() { cacheResult = initialCacheResult }()
+	setupTestDB()
 
 	actualFilmDetails := fetchFilmDetails("toy-story")
 
@@ -158,7 +161,11 @@ func TestFetchFilmDetails_NoValuesOnPage(t *testing.T) {
 		Cast:  []Credit{},
 	}
 
-	if !reflect.DeepEqual(expectedFilmDetails, actualFilmDetails) {
+	filmDetailsEqual := expectedFilmDetails.Slug == actualFilmDetails.Slug &&
+		expectedFilmDetails.Title == actualFilmDetails.Title &&
+		reflect.DeepEqual(expectedFilmDetails.Cast, actualFilmDetails.Cast)
+
+	if !filmDetailsEqual {
 		t.Errorf("Expected filmSlugs %v, got %v", expectedFilmDetails, actualFilmDetails)
 	}
 

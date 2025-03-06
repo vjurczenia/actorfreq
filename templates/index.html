@@ -268,7 +268,7 @@
                                     ${actorEntry.Movies.map(movieDetails => 
                                         `<li>
                                             <a href="https://letterboxd.com/film/${movieDetails.FilmSlug}" target="_blank">
-                                                ${movieDetails.Title} - ${movieDetails.Roles.join(" / ")}
+                                                ${movieDetails.Title} - ${movieDetails.Roles}
                                             </a>
                                         </li>`
                                     ).join('')}                                        
