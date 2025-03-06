@@ -23,7 +23,7 @@ go.work.sum
 
 # env file
 .env
+.env.docker
 
+# Executable
 actorfreq
-cache.json
-cache.json.bak

@@ -9,6 +9,8 @@ import (
 	"sync"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/lib/pq"
+	"gorm.io/gorm"
 )
 
 func fetchFilmSlugs(username string, sortStrategy string) []string {
@@ -85,11 +87,15 @@ func extractFilmSlugs(doc *goquery.Document) []string {
 }
 
 type Credit struct {
-	Actor string
-	Roles []string
+	gorm.Model
+	Actor         string
+	Roles         pq.StringArray `gorm:"type:text[]"`
+	FilmDetailsID uint
 }
 
 type FilmDetails struct {
+	gorm.Model
+	Slug  string
 	Title string
 	Cast  []Credit
 }
@@ -122,12 +128,13 @@ func fetchFilmDetails(slug string) FilmDetails {
 		cast = append(cast, Credit{Actor: actor, Roles: roles[actor]})
 	}
 
-	filmDetails := FilmDetails{Title: title, Cast: cast}
+	filmDetails := FilmDetails{Slug: slug, Title: title, Cast: cast}
 
-	// Store result in cache
-	cacheMutex.Lock()
-	cache[slug] = filmDetails
-	cacheMutex.Unlock()
+	cacheResult(filmDetails)
 
 	return filmDetails
+}
+
+var cacheResult = func(fd FilmDetails) {
+	db.Create(&fd)
 }

@@ -50,21 +50,36 @@ func TestFetchActors(t *testing.T) {
 		}, nil
 	})
 
-	initialSaveCache := saveCache
-	saveCache = func() {}
-	defer func() { saveCache = initialSaveCache }()
+	initialCacheResult := cacheResult
+	cacheResult = func(fd FilmDetails) {}
+	defer func() { cacheResult = initialCacheResult }()
 
-	initialCache := cache
-	cache = map[string]FilmDetails{
-		"saving-private-ryan": {
-			Title: "Saving Private Ryan",
-			Cast: []Credit{
-				{Actor: "Tom Hanks", Roles: []string{"Captain Miller"}},
-				{Actor: "Matt Damon", Roles: []string{"Private Ryan"}},
+	initialGetFilm := getFilm
+	getFilm = func(slug string) FilmDetails {
+		uncached := []string{"toy-story"}
+
+		if slices.Contains(uncached, slug) {
+			return fetchFilmDetails(slug)
+		}
+
+		cache := map[string]FilmDetails{
+			"saving-private-ryan": {
+				Title: "Saving Private Ryan",
+				Cast: []Credit{
+					{Actor: "Tom Hanks", Roles: []string{"Captain Miller"}},
+					{Actor: "Matt Damon", Roles: []string{"Private Ryan"}},
+				},
 			},
-		},
+		}
+
+		cachedData, found := cache[slug]
+		if !found {
+			t.Errorf("Expected slug %s not found in cache", slug)
+		}
+
+		return cachedData
 	}
-	defer func() { cache = initialCache }()
+	defer func() { getFilm = initialGetFilm }()
 
 	actualActors := fetchActors("testUser", "date", 2, nil)
 

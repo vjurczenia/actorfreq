@@ -31,15 +31,8 @@ func fetchActors(username string, sortStrategy string, lastNMovies int, w *http.
 
 	actors := make(map[string]*actorDetails)
 	for i, slug := range filmSlugs {
-		cacheMutex.Lock()
-		cachedData, found := cache[slug]
-		cacheMutex.Unlock()
-
-		if !found {
-			cachedData = fetchFilmDetails(slug)
-		}
-
-		for _, credit := range cachedData.Cast {
+		film := getFilm(slug)
+		for _, credit := range film.Cast {
 			actor, found := actors[credit.Actor]
 			if !found {
 				actors[credit.Actor] = &actorDetails{Name: credit.Actor}
@@ -47,7 +40,7 @@ func fetchActors(username string, sortStrategy string, lastNMovies int, w *http.
 			}
 			actor.Movies = append(actor.Movies, movieDetails{
 				FilmSlug: slug,
-				Title:    cachedData.Title,
+				Title:    film.Title,
 				Roles:    credit.Roles,
 			})
 		}
@@ -59,11 +52,16 @@ func fetchActors(username string, sortStrategy string, lastNMovies int, w *http.
 		}
 	}
 
-	cleanedActors := cleanActors(actors)
+	return cleanActors(actors)
+}
 
-	saveCache()
-
-	return cleanedActors
+var getFilm = func(slug string) FilmDetails {
+	var films []FilmDetails
+	result := db.Preload("Cast").Where("slug = ?", slug).Limit(1).Find(&films)
+	if result.Error != nil || result.RowsAffected == 0 {
+		return fetchFilmDetails(slug)
+	}
+	return films[0]
 }
 
 func cleanActors(actors map[string]*actorDetails) []actorDetails {

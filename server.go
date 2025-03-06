@@ -66,8 +66,6 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 	sendMapAsSSEData(w, map[string][]actorDetails{
 		"actors": actors,
 	})
-
-	saveCache()
 }
 
 var sseMutex sync.Mutex

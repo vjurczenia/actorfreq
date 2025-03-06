@@ -95,9 +95,14 @@ func TestFetchFilmDetails(t *testing.T) {
 		}, nil
 	})
 
+	initialCacheResult := cacheResult
+	cacheResult = func(fd FilmDetails) {}
+	defer func() { cacheResult = initialCacheResult }()
+
 	actualFilmDetails := fetchFilmDetails("toy-story")
 
 	expectedFilmDetails := FilmDetails{
+		Slug:  "toy-story",
 		Title: "Toy Story",
 		Cast:  []Credit{{Actor: "Tom Hanks", Roles: []string{"Woody", "Another Role"}}},
 	}
@@ -141,9 +146,14 @@ func TestFetchFilmDetails_NoValuesOnPage(t *testing.T) {
 		}, nil
 	})
 
+	initialCacheResult := cacheResult
+	cacheResult = func(fd FilmDetails) {}
+	defer func() { cacheResult = initialCacheResult }()
+
 	actualFilmDetails := fetchFilmDetails("toy-story")
 
 	expectedFilmDetails := FilmDetails{
+		Slug:  "toy-story",
 		Title: "toy-story",
 		Cast:  []Credit{},
 	}
