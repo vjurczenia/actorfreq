@@ -65,6 +65,14 @@ func TestFetchFilmSlugs(t *testing.T) {
 	}
 }
 
+func compareFilmDetails(fd1, fd2 FilmDetails) bool {
+	return fd1.Slug == fd2.Slug &&
+		fd1.Title == fd2.Title &&
+		slices.EqualFunc(fd1.Cast, fd2.Cast, func(a, b Credit) bool {
+			return a.Actor == b.Actor && a.Roles == b.Roles
+		})
+}
+
 func TestFetchFilmDetails(t *testing.T) {
 	actualHTTPCallCounts := make(map[string]int)
 	expectedHTTPCallCounts := map[string]int{
@@ -106,13 +114,7 @@ func TestFetchFilmDetails(t *testing.T) {
 		Cast:  []Credit{{Actor: "Tom Hanks", Roles: "Woody / Another Role"}},
 	}
 
-	filmDetailsEqual := expectedFilmDetails.Slug == actualFilmDetails.Slug &&
-		expectedFilmDetails.Title == actualFilmDetails.Title &&
-		slices.EqualFunc(expectedFilmDetails.Cast, actualFilmDetails.Cast, func(a, b Credit) bool {
-			return a.Actor == b.Actor && a.Roles == b.Roles
-		})
-
-	if !filmDetailsEqual {
+	if !compareFilmDetails(expectedFilmDetails, actualFilmDetails) {
 		t.Errorf("Expected filmSlugs %v, got %v", expectedFilmDetails, actualFilmDetails)
 	}
 
@@ -161,11 +163,7 @@ func TestFetchFilmDetails_NoValuesOnPage(t *testing.T) {
 		Cast:  []Credit{},
 	}
 
-	filmDetailsEqual := expectedFilmDetails.Slug == actualFilmDetails.Slug &&
-		expectedFilmDetails.Title == actualFilmDetails.Title &&
-		reflect.DeepEqual(expectedFilmDetails.Cast, actualFilmDetails.Cast)
-
-	if !filmDetailsEqual {
+	if !compareFilmDetails(expectedFilmDetails, actualFilmDetails) {
 		t.Errorf("Expected filmSlugs %v, got %v", expectedFilmDetails, actualFilmDetails)
 	}
 
