@@ -47,12 +47,12 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lastNMoviesFormValue := r.FormValue("lastNMovies")
-	lastNMovies := -1
-	if lastNMoviesFormValue != "" {
-		lastNMoviesInt, err := strconv.Atoi(lastNMoviesFormValue)
+	topNMoviesFormValue := r.FormValue("topNMovies")
+	topNMovies := -1
+	if topNMoviesFormValue != "" {
+		topNMoviesInt, err := strconv.Atoi(topNMoviesFormValue)
 		if err == nil {
-			lastNMovies = lastNMoviesInt
+			topNMovies = topNMoviesInt
 		}
 	}
 
@@ -61,7 +61,7 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	actors := fetchActors(username, sortStrategy, lastNMovies, &w)
+	actors := fetchActors(username, sortStrategy, topNMovies, &w)
 
 	sendMapAsSSEData(w, map[string][]actorDetails{
 		"actors": actors,

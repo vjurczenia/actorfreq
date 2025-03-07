@@ -226,7 +226,7 @@
             event.preventDefault();
             const username = document.getElementById("username").value;
             const sortStrategy = document.getElementById("sortStrategy").value;
-            const lastNMovies = document.getElementById("lastNMovies").value;
+            const topNMovies = document.getElementById("topNMovies").value;
             const resultDiv = document.getElementById("results");
             const progressContainer = document.getElementById("progress-container");
             const progressBar = document.getElementById("progress-bar");
@@ -240,7 +240,7 @@
             const params = new URLSearchParams({
                 username: encodeURIComponent(username),
                 sortStrategy: encodeURIComponent(sortStrategy),
-                lastNMovies: encodeURIComponent(lastNMovies),
+                topNMovies: encodeURIComponent(topNMovies),
             });
             eventSource = new EventSource(`/fetch-actors?${params.toString()}`);
 
@@ -343,8 +343,8 @@
             </div>
 
 
-            <label for="lastNMovies">Number of Movies to Consider:</label>
-            <input type="number" id="lastNMovies" placeholder="Optional (considers all by default)">
+            <label for="topNMovies">Number of Movies to Consider:</label>
+            <input type="number" id="topNMovies" placeholder="Optional (considers all by default)">
 
             <button type="submit">Submit</button>
         </form>
