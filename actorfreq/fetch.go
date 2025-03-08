@@ -63,7 +63,7 @@ func getFilm(slug string) FilmDetails {
 	if db != nil {
 		result = db.Preload("Cast").Where("slug = ?", slug).Limit(1).Find(&films)
 	}
-	if result != nil && (result.Error != nil || result.RowsAffected == 0) {
+	if result == nil || result.Error != nil || result.RowsAffected == 0 {
 		return fetchFilmDetails(slug)
 	}
 	return films[0]
