@@ -65,7 +65,7 @@ func getFilm(slug string) FilmDetails {
 }
 
 func cleanActors(actors map[string]*actorDetails) []actorDetails {
-	// Filter out actors appearing only once and sort by movies descending
+	// Filter out actors appearing only once and sort by movies descending and name ascending
 	cleanedActors := []actorDetails{}
 	for _, actor := range actors {
 		if len(actor.Movies) > 1 {
@@ -74,6 +74,9 @@ func cleanActors(actors map[string]*actorDetails) []actorDetails {
 	}
 
 	sort.Slice(cleanedActors, func(i, j int) bool {
+		if len(cleanedActors[i].Movies) == len(cleanedActors[j].Movies) {
+			return cleanedActors[i].Name < cleanedActors[j].Name
+		}
 		return len(cleanedActors[i].Movies) > len(cleanedActors[j].Movies)
 	})
 
