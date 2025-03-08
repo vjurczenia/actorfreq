@@ -12,11 +12,11 @@ import (
 var db *gorm.DB
 
 func setUpDB() {
-	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
-	dbUser := os.Getenv("DB_USER")
-	dbPassword := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
+	dbHost := os.Getenv("ACTORFREQ_DB_HOST")
+	dbPort := os.Getenv("ACTORFREQ_DB_PORT")
+	dbUser := os.Getenv("ACTORFREQ_DB_USER")
+	dbPassword := os.Getenv("ACTORFREQ_DB_PASSWORD")
+	dbName := os.Getenv("ACTORFREQ_DB_NAME")
 
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		dbHost, dbPort, dbUser, dbPassword, dbName)

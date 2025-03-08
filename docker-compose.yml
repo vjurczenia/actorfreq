@@ -12,7 +12,7 @@ services:
     networks:
       - actorfreq
     healthcheck:
-      test: ["CMD", "sh", "-c", "pg_isready -U $DB_USER -d $DB_NAME -h $DB_HOST"]
+      test: ["CMD", "sh", "-c", "pg_isready -U $ACTORFREQ_DB_USER -d $ACTORFREQ_DB_NAME -h $ACTORFREQ_DB_HOST"]
       interval: 5s
       retries: 5
       start_period: 5s
