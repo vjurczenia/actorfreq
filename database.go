@@ -11,7 +11,7 @@ import (
 
 var db *gorm.DB
 
-func setUpDB() {
+func SetUpDB() {
 	dbHost := os.Getenv("ACTORFREQ_DB_HOST")
 	dbPort := os.Getenv("ACTORFREQ_DB_PORT")
 	dbUser := os.Getenv("ACTORFREQ_DB_USER")

@@ -18,7 +18,7 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	setUpDB()
+	SetUpDB()
 
 	// CLI()
 	StartServer()
