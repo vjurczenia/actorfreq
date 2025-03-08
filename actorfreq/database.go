@@ -31,6 +31,8 @@ func SetUpDB() {
 }
 
 func migrateDB() {
-	db.AutoMigrate(&FilmDetails{})
-	db.AutoMigrate(&Credit{})
+	if db != nil {
+		db.AutoMigrate(&FilmDetails{})
+		db.AutoMigrate(&Credit{})
+	}
 }

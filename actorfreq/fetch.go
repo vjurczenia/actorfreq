@@ -3,6 +3,8 @@ package actorfreq
 import (
 	"net/http"
 	"sort"
+
+	"gorm.io/gorm"
 )
 
 type actorDetails struct {
@@ -57,8 +59,11 @@ func FetchActors(username string, sortStrategy string, topNMovies int, w *http.R
 
 func getFilm(slug string) FilmDetails {
 	var films []FilmDetails
-	result := db.Preload("Cast").Where("slug = ?", slug).Limit(1).Find(&films)
-	if result.Error != nil || result.RowsAffected == 0 {
+	var result *gorm.DB
+	if db != nil {
+		result = db.Preload("Cast").Where("slug = ?", slug).Limit(1).Find(&films)
+	}
+	if result != nil && (result.Error != nil || result.RowsAffected == 0) {
 		return fetchFilmDetails(slug)
 	}
 	return films[0]
