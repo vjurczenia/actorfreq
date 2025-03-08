@@ -20,6 +20,6 @@ func main() {
 
 	setUpDB()
 
-	// cli()
-	startServer()
+	// CLI()
+	StartServer()
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -9,23 +10,33 @@ import (
 	"sync"
 )
 
-func startServer() {
-	http.HandleFunc("/", homeHandler)
-	http.HandleFunc("/fetch-actors", fetchActorsHandler)
+var FetchActorsPath string = "fetch-actors"
+
+func StartServer() {
+	AddHandlers("")
 
 	port := "8080"
 	fmt.Println("Starting server on port", port)
 	http.ListenAndServe(":"+port, nil)
 }
 
+func AddHandlers(root string) {
+	http.HandleFunc(fmt.Sprintf("%s/", root), homeHandler)
+	http.HandleFunc(fmt.Sprintf("%s/%s", root, FetchActorsPath), fetchActorsHandler)
+}
+
+//go:embed templates
+var templates embed.FS
+
 // homeHandler renders the homepage with a form
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("templates/index.html")
+	// Using embed.FS with template.ParseFS: https://www.reddit.com/r/golang/comments/1fllizl/comment/lo69j1e/
+	tmpl, err := template.ParseFS(templates, "templates/index.html")
 	if err != nil {
 		http.Error(w, "Error loading template", http.StatusInternalServerError)
 		return
 	}
-	tmpl.Execute(w, nil)
+	tmpl.ExecuteTemplate(w, "index.html", struct{ FetchActorsPath string }{FetchActorsPath: FetchActorsPath})
 }
 
 // fetchActorsHandler processes the form submission, fetches actor details, and returns JSON
@@ -61,7 +72,7 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	actors := fetchActors(username, sortStrategy, topNMovies, &w)
+	actors := FetchActors(username, sortStrategy, topNMovies, &w)
 
 	sendMapAsSSEData(w, map[string][]actorDetails{
 		"actors": actors,

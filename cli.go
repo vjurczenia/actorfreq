@@ -6,7 +6,7 @@ import (
 	"log/slog"
 )
 
-func cli() {
+func CLI() {
 	// Parse command-line arguments
 	username := flag.String("username", "", "The username to fetch data for")
 	topNMovies := flag.Int("topNMovies", -1, "Last N movies to fetch data for")
@@ -18,7 +18,7 @@ func cli() {
 		return
 	}
 
-	actors := fetchActors(*username, "date", *topNMovies, nil)
+	actors := FetchActors(*username, "date", *topNMovies, nil)
 
 	// Output top 10 actors
 	printTopActors(actors)

@@ -62,7 +62,7 @@ func TestFetchActors(t *testing.T) {
 		},
 	)
 
-	actualActors := fetchActors("testUser", "date", 2, nil)
+	actualActors := FetchActors("testUser", "date", 2, nil)
 
 	expectedActors := []actorDetails{
 		{

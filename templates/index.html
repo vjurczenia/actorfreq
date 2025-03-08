@@ -242,7 +242,7 @@
                 sortStrategy: encodeURIComponent(sortStrategy),
                 topNMovies: encodeURIComponent(topNMovies),
             });
-            eventSource = new EventSource(`/fetch-actors?${params.toString()}`);
+            eventSource = new EventSource(`{{.FetchActorsPath}}?${params.toString()}`);
 
             var total = 0;
             eventSource.onmessage = function (event) {
