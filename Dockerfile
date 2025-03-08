@@ -4,8 +4,8 @@ WORKDIR /app
 
 COPY . .
 RUN go mod download
-RUN go build -o actorfreq .
+RUN go build -o main .
 
 EXPOSE 8080
 
-CMD ["./actorfreq"]
+CMD ["./main"]

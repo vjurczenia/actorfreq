@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/vjurczenia/actorfreq/actorfreq"
 )
 
 func main() {
@@ -18,8 +19,8 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	SetUpDB()
+	actorfreq.SetUpDB()
 
-	// CLI()
-	StartServer()
+	// actorfreq.CLI()
+	actorfreq.StartServer()
 }
