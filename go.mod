@@ -1,8 +1,8 @@
-module vjurczenia.com/actorfreq
+module github.com/vjurczenia/actorfreq
 
 go 1.23
 
-toolchain go1.23.6
+toolchain go1.23.7
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.2
