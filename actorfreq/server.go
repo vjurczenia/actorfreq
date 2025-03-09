@@ -10,10 +10,10 @@ import (
 	"sync"
 )
 
-var FetchActorsPath string = "fetch-actors"
+var FetchActorsPath string = "fetch-actors/"
 
 func StartServer() {
-	AddHandlers("")
+	AddHandlers("/")
 
 	port := "8080"
 	fmt.Println("Starting server on port", port)
@@ -21,8 +21,8 @@ func StartServer() {
 }
 
 func AddHandlers(root string) {
-	http.HandleFunc(fmt.Sprintf("%s/", root), homeHandler)
-	http.HandleFunc(fmt.Sprintf("%s/%s", root, FetchActorsPath), fetchActorsHandler)
+	http.HandleFunc(root, homeHandler)
+	http.HandleFunc(fmt.Sprintf("%s%s", root, FetchActorsPath), fetchActorsHandler)
 }
 
 //go:embed templates
