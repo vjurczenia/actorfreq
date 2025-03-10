@@ -1,6 +1,7 @@
 package actorfreq
 
 import (
+	"log/slog"
 	"net/http"
 	"sort"
 
@@ -64,8 +65,10 @@ func getFilm(slug string) FilmDetails {
 		result = db.Preload("Cast").Where("slug = ?", slug).Limit(1).Find(&films)
 	}
 	if result == nil || result.Error != nil || result.RowsAffected == 0 {
+		slog.Info("Cache miss", "slug", slug)
 		return fetchFilmDetails(slug)
 	}
+	slog.Info("Cache hit", "slug", slug)
 	return films[0]
 }
 
