@@ -19,11 +19,11 @@ type movieDetails struct {
 	Roles    string
 }
 
-func FetchActors(username string, sortStrategy string, topNMovies int, w *http.ResponseWriter) []actorDetails {
-	filmSlugs := fetchFilmSlugs(username, sortStrategy)
+func FetchActors(username string, rc requestConfig, w *http.ResponseWriter) []actorDetails {
+	filmSlugs := fetchFilmSlugs(username, rc.sortStrategy)
 
-	if topNMovies > 0 && topNMovies < len(filmSlugs) {
-		filmSlugs = filmSlugs[:topNMovies]
+	if rc.topNMovies > 0 && rc.topNMovies < len(filmSlugs) {
+		filmSlugs = filmSlugs[:rc.topNMovies]
 	}
 
 	if w != nil {

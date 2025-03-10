@@ -39,6 +39,11 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "index.html", struct{ FetchActorsPath string }{FetchActorsPath: FetchActorsPath})
 }
 
+type requestConfig struct {
+	sortStrategy string
+	topNMovies   int
+}
+
 // fetchActorsHandler processes the form submission, fetches actor details, and returns JSON
 func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -52,10 +57,24 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	requestConfig := getRequestConfig(r)
+
+	// Set the headers for SSE
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	actors := FetchActors(username, requestConfig, &w)
+
+	sendMapAsSSEData(w, map[string][]actorDetails{
+		"actors": actors,
+	})
+}
+
+func getRequestConfig(r *http.Request) requestConfig {
 	sortStrategy := r.FormValue("sortStrategy")
 	if sortStrategy == "" {
-		http.Error(w, "Sort strategy is required", http.StatusBadRequest)
-		return
+		sortStrategy = "date"
 	}
 
 	topNMoviesFormValue := r.FormValue("topNMovies")
@@ -67,16 +86,10 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Set the headers for SSE
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-
-	actors := FetchActors(username, sortStrategy, topNMovies, &w)
-
-	sendMapAsSSEData(w, map[string][]actorDetails{
-		"actors": actors,
-	})
+	return requestConfig{
+		sortStrategy: sortStrategy,
+		topNMovies:   topNMovies,
+	}
 }
 
 var sseMutex sync.Mutex

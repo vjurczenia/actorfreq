@@ -9,6 +9,7 @@ import (
 func CLI() {
 	// Parse command-line arguments
 	username := flag.String("username", "", "The username to fetch data for")
+	sortStrategy := flag.String("sortStrategy", "", "How to sort movies")
 	topNMovies := flag.Int("topNMovies", -1, "Last N movies to fetch data for")
 	flag.Parse()
 
@@ -18,7 +19,12 @@ func CLI() {
 		return
 	}
 
-	actors := FetchActors(*username, "date", *topNMovies, nil)
+	rc := requestConfig{
+		sortStrategy: *sortStrategy,
+		topNMovies:   *topNMovies,
+	}
+
+	actors := FetchActors(*username, rc, nil)
 
 	// Output top 10 actors
 	printTopActors(actors)

@@ -62,7 +62,11 @@ func TestFetchActors(t *testing.T) {
 		},
 	)
 
-	actualActors := FetchActors("testUser", "date", 2, nil)
+	rc := requestConfig{
+		sortStrategy: "date",
+		topNMovies:   2,
+	}
+	actualActors := FetchActors("testUser", rc, nil)
 
 	expectedActors := []actorDetails{
 		{
