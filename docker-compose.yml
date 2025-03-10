@@ -1,5 +1,5 @@
 services:
-  actorfreq_db:
+  db:
     image: postgres:17.4
     container_name: actorfreq_db
     restart: always
@@ -18,11 +18,11 @@ services:
       start_period: 5s
       timeout: 5s
 
-  actorfreq:
+  app:
     build: .
     container_name: actorfreq
     depends_on:
-      actorfreq_db:
+      db:
         condition: service_healthy
     env_file:
       - .env.docker
