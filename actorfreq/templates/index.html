@@ -72,6 +72,7 @@
             cursor: pointer;
             width: 100%;
             transition: background-color 0.3s ease;
+            margin-bottom: 20px;
         }
 
         button:hover {
@@ -162,7 +163,6 @@
 
         /* Results Section */
         #results {
-            margin-top: 20px;
             color: #444;
             font-size: 1rem;
             transition: opacity 0.5s ease;
@@ -214,7 +214,6 @@
             height: 20px;
             background-color: #ddd;
             border-radius: 5px;
-            margin-top: 20px;
             margin-bottom: 20px;
             display: none;
         }
@@ -233,6 +232,11 @@
             if (movieList) {
                 movieList.style.display = movieList.style.display === 'none' ? 'block' : 'none';
             }
+        }
+
+        function toggleAdvancedOptions() {
+            const advancedOptions = document.getElementById('advancedOptions');
+            advancedOptions.style.display = advancedOptions.style.display === 'none' ? 'block' : 'none';
         }
 
         let eventSource;
@@ -315,59 +319,54 @@
         <form onsubmit="fetchActors(event)">
             <label for="username">Enter Letterboxd Username:</label>
             <input type="text" id="username" required>
-
-            <label for="sortStrategy">Sort By:</label>
-            <div class="select-wrapper">
-                <span id="selected-value">Film Popularity</span> <!-- Default display -->
-                <select id="sortStrategy">
-                    <option value="name">Film Name</option>
-                    <option value="popular" selected>Film Popularity</option>
-                    <!-- <option value="shuffle">Shuffle</option> -->
-
-                    <optgroup label="When Added">
-                        <option value="date">Newest First</option>
-                        <option value="date-earliest">Earliest First</option>
-                    </optgroup>
-
-                    <optgroup label="When Rated">
-                        <option value="rated-date">Newest First</option>
-                        <option value="rated-date-earliest">Earliest First</option>
-                    </optgroup>
-
-                    <optgroup label="Release Date">
-                        <option value="release">Newest First</option>
-                        <option value="release-earliest">Earliest First</option>
-                    </optgroup>
-
-                    <optgroup label="Average Rating">
-                        <option value="rating">Highest First</option>
-                        <option value="rating-lowest">Lowest First</option>
-                    </optgroup>
-
-                    <optgroup label="User's Rating">
-                        <option value="entry-rating">Highest First</option>
-                        <option value="entry-rating-lowest">Lowest First</option>
-                    </optgroup>
-
-                    <optgroup label="Film Length">
-                        <option value="shortest">Shortest First</option>
-                        <option value="longest">Longest First</option>
-                    </optgroup>
-                </select>
+            
+            <button type="button" onclick="toggleAdvancedOptions()">Advanced Options</button>
+            
+            <div id="advancedOptions" style="display: none;">
+                <label for="sortStrategy">Sort By:</label>
+                <div class="select-wrapper">
+                    <span id="selected-value">Film Popularity</span>
+                    <select id="sortStrategy">
+                        <option value="name">Film Name</option>
+                        <option value="popular" selected>Film Popularity</option>
+                        <optgroup label="When Added">
+                            <option value="date">Newest First</option>
+                            <option value="date-earliest">Earliest First</option>
+                        </optgroup>
+                        <optgroup label="When Rated">
+                            <option value="rated-date">Newest First</option>
+                            <option value="rated-date-earliest">Earliest First</option>
+                        </optgroup>
+                        <optgroup label="Release Date">
+                            <option value="release">Newest First</option>
+                            <option value="release-earliest">Earliest First</option>
+                        </optgroup>
+                        <optgroup label="Average Rating">
+                            <option value="rating">Highest First</option>
+                            <option value="rating-lowest">Lowest First</option>
+                        </optgroup>
+                        <optgroup label="User's Rating">
+                            <option value="entry-rating">Highest First</option>
+                            <option value="entry-rating-lowest">Lowest First</option>
+                        </optgroup>
+                        <optgroup label="Film Length">
+                            <option value="shortest">Shortest First</option>
+                            <option value="longest">Longest First</option>
+                        </optgroup>
+                    </select>
+                </div>
+        
+                <fieldset id="roleFilters">
+                    <legend>Roles to Filter Out:</legend>
+                    <label><input type="checkbox" class="roleFilter" name="roleFilter" value="additional_voices">Additional Voices</label>
+                    <label><input type="checkbox" class="roleFilter" name="roleFilter" value="voice">(voice)</label>
+                    <label><input type="checkbox" class="roleFilter" name="roleFilter" value="uncredited">(uncredited)</label>
+                </fieldset>
+        
+                <label for="topNMovies">Number of Movies to Consider:</label>
+                <input type="number" id="topNMovies" placeholder="Optional (considers all by default)">
             </div>
-
-            <fieldset id="roleFilters">
-                <legend>Roles to Filter Out:</legend>
-                <label><input type="checkbox" class="roleFilter" name="roleFilter" value="additional_voices">Additional
-                    Voices</label>
-                <label><input type="checkbox" class="roleFilter" name="roleFilter" value="voice">(voice)</label>
-                <label><input type="checkbox" class="roleFilter" name="roleFilter"
-                        value="uncredited">(uncredited)</label>
-            </fieldset>
-
-            <label for="topNMovies">Number of Movies to Consider:</label>
-            <input type="number" id="topNMovies" placeholder="Optional (considers all by default)">
-
+        
             <button type="submit">Submit</button>
         </form>
 
