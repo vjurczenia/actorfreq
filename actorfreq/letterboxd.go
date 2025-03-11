@@ -136,3 +136,18 @@ func fetchFilmDetails(slug string) FilmDetails {
 
 	return filmDetails
 }
+
+func fetchFollowing(username string) []string {
+	url := fmt.Sprintf("https://letterboxd.com/%s/following/", username)
+	doc := fetchDoc(url)
+
+	following := []string{}
+	doc.Find("td.table-person h3 a").Each(func(i int, s *goquery.Selection) {
+		href, exists := s.Attr("href")
+		if exists {
+			following = append(following, strings.Trim(href, "/"))
+		}
+	})
+
+	return following
+}

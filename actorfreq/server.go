@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"slices"
 	"strconv"
 	"sync"
+	"sync/atomic"
 )
 
 var FetchActorsPath string = "fetch-actors/"
@@ -39,14 +41,21 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "index.html", struct{ FetchActorsPath string }{FetchActorsPath: FetchActorsPath})
 }
 
+var activeRequests int32
+
 type requestConfig struct {
 	sortStrategy string
 	topNMovies   int
 	roleFilters  []string
 }
 
+var precacheFollowingStarted = atomic.Bool{}
+
 // fetchActorsHandler processes the form submission, fetches actor details, and returns JSON
 func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
+	atomic.AddInt32(&activeRequests, 1)
+	defer atomic.AddInt32(&activeRequests, -1)
+
 	if r.Method != http.MethodGet {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
@@ -76,6 +85,18 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 	sendMapAsSSEData(w, map[string][]actorDetails{
 		"actors": actors,
 	})
+
+	followedUsersToPrecacheForMutex.Lock()
+	for _, followedUser := range fetchFollowing(username) {
+		if !slices.Contains(followedUsersToPrecacheFor, followedUser) {
+			followedUsersToPrecacheFor = append(followedUsersToPrecacheFor, followedUser)
+		}
+	}
+	followedUsersToPrecacheForMutex.Unlock()
+
+	if !precacheFollowingStarted.Load() {
+		go precacheFollowing()
+	}
 }
 
 func getRequestConfig(r *http.Request) requestConfig {

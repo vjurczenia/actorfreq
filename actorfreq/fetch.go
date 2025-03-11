@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"gorm.io/gorm"
 )
@@ -113,4 +115,46 @@ func cleanActors(actors map[string]*actorDetails) []actorDetails {
 	})
 
 	return cleanedActors
+}
+
+var filmSlugsToPrecacheMutex sync.Mutex
+var filmSlugsToPrecache = []string{}
+var followedUsersToPrecacheForMutex sync.Mutex
+var followedUsersToPrecacheFor = []string{}
+
+func precacheFollowing() {
+	precacheFollowingStarted.Store(true)
+	if db != nil {
+		defer precacheFollowingStarted.Store(false)
+		for {
+			if atomic.LoadInt32(&activeRequests) == 0 {
+				if len(filmSlugsToPrecache) != 0 {
+					slug := filmSlugsToPrecache[0]
+					var films []FilmDetails
+					result := db.Preload("Cast").Where("slug = ?", slug).Limit(1).Find(&films)
+					if result.Error != nil || result.RowsAffected == 0 {
+						slog.Info("Precaching followedUser film slug", "slug", slug)
+						fetchFilmDetails(slug)
+					}
+
+					filmSlugsToPrecacheMutex.Lock()
+					filmSlugsToPrecache = filmSlugsToPrecache[1:]
+					filmSlugsToPrecacheMutex.Unlock()
+				} else if len(followedUsersToPrecacheFor) != 0 {
+					followedUser := followedUsersToPrecacheFor[0]
+					slog.Info("Fetching followedUser film slugs", "followedUser", followedUser)
+
+					filmSlugsToPrecacheMutex.Lock()
+					filmSlugsToPrecache = fetchFilmSlugs(followedUser, "release")
+					filmSlugsToPrecacheMutex.Unlock()
+
+					followedUsersToPrecacheForMutex.Lock()
+					followedUsersToPrecacheFor = followedUsersToPrecacheFor[1:]
+					followedUsersToPrecacheForMutex.Unlock()
+				} else {
+					break
+				}
+			}
+		}
+	}
 }
