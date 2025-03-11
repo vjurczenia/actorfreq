@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -37,15 +38,18 @@ func FetchActors(username string, rc requestConfig, w *http.ResponseWriter) []ac
 		film := getFilm(slug)
 		for _, credit := range film.Cast {
 			actor, found := actors[credit.Actor]
-			if !found {
-				actors[credit.Actor] = &actorDetails{Name: credit.Actor}
-				actor = actors[credit.Actor]
+			filteredRoles := filterRoles(credit.Roles, rc.roleFilters)
+			if filteredRoles != "" {
+				if !found {
+					actors[credit.Actor] = &actorDetails{Name: credit.Actor}
+					actor = actors[credit.Actor]
+				}
+				actor.Movies = append(actor.Movies, movieDetails{
+					FilmSlug: slug,
+					Title:    film.Title,
+					Roles:    credit.Roles,
+				})
 			}
-			actor.Movies = append(actor.Movies, movieDetails{
-				FilmSlug: slug,
-				Title:    film.Title,
-				Roles:    credit.Roles,
-			})
 		}
 
 		if w != nil {
@@ -70,6 +74,26 @@ func getFilm(slug string) FilmDetails {
 	}
 	slog.Info("Cache hit", "slug", slug)
 	return films[0]
+}
+
+func filterRoles(roles string, roleFilters []string) string {
+	for _, roleFilter := range roleFilters {
+		switch roleFilter {
+		case "additional_voices":
+			if roles == "Additional Voices" || roles == "Additional Voices (voice)" {
+				return ""
+			}
+		case "voice":
+			if strings.HasSuffix(roles, "(voice)") {
+				return ""
+			}
+		case "uncredited":
+			if strings.HasSuffix(roles, "(uncredited)") {
+				return ""
+			}
+		}
+	}
+	return roles
 }
 
 func cleanActors(actors map[string]*actorDetails) []actorDetails {

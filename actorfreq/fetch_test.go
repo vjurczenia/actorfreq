@@ -33,6 +33,7 @@ func TestFetchActors(t *testing.T) {
 				`<li class="paginate-page"><a>2</a></li></ul>`
 		case "https://letterboxd.com/testUser/films/by/date/page/2":
 			responseString = `<div data-film-slug="saving-private-ryan" />` +
+				`<div data-film-slug="thor-ragnarok" />` +
 				`<div data-film-slug="forrest-gump" />`
 		case "https://letterboxd.com/testUser/films/by/date/page/3":
 			responseString = ""
@@ -61,10 +62,20 @@ func TestFetchActors(t *testing.T) {
 			},
 		},
 	)
+	db.Create(
+		&FilmDetails{
+			Slug:  "thor-ragnarok",
+			Title: "Thor: Ragnarok",
+			Cast: []Credit{
+				{Actor: "Matt Damon", Roles: "Actor Loki (uncredited)"},
+			},
+		},
+	)
 
 	rc := requestConfig{
 		sortStrategy: "date",
-		topNMovies:   2,
+		topNMovies:   3,
+		roleFilters:  []string{"uncredited"},
 	}
 	actualActors := FetchActors("testUser", rc, nil)
 

@@ -145,6 +145,21 @@
             padding-right: 40px;
         }
 
+        /* Checkboxes */
+        #roleFilters {
+            border: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
+
+        #roleFilters legend {
+            margin-bottom: 8px;
+        }
+
+        #roleFilters input.roleFilter {
+            margin: 3px 8px 3px 3px;
+        }
+
         /* Results Section */
         #results {
             margin-top: 20px;
@@ -224,9 +239,6 @@
 
         async function fetchActors(event) {
             event.preventDefault();
-            const username = document.getElementById("username").value;
-            const sortStrategy = document.getElementById("sortStrategy").value;
-            const topNMovies = document.getElementById("topNMovies").value;
             const resultDiv = document.getElementById("results");
             const progressContainer = document.getElementById("progress-container");
             const progressBar = document.getElementById("progress-bar");
@@ -236,11 +248,13 @@
             progressBar.style.width = '0%'; // Reset progress bar
             progressContainer.style.display = 'block'; // Show progress bar
 
-            // Open a connection to the server for receiving progress updates and results
-            const params = new URLSearchParams({
-                username: encodeURIComponent(username),
-                sortStrategy: encodeURIComponent(sortStrategy),
-                topNMovies: encodeURIComponent(topNMovies),
+            // Parse form and open a connection to the server for receiving progress updates and results
+            const params = new URLSearchParams();
+            params.append("username", document.getElementById("username").value);
+            params.append("sortStrategy", document.getElementById("sortStrategy").value);
+            params.append("topNMovies", document.getElementById("topNMovies").value);
+            document.querySelectorAll("input[name='roleFilter']:checked").forEach(checkbox => {
+                params.append("roleFilter", checkbox.value)
             });
             eventSource = new EventSource(`{{.FetchActorsPath}}?${params.toString()}`);
 
@@ -265,13 +279,13 @@
                                         ${actorEntry.Name}: ${actorEntry.Movies.length} appearances
                                     </span>
                                     <ul id="movies-${actorEntry.Name}" class="movie-list" style="display: none">
-                                    ${actorEntry.Movies.map(movieDetails => 
-                                        `<li>
+                                    ${actorEntry.Movies.map(movieDetails =>
+                                `<li>
                                             <a href="https://letterboxd.com/film/${movieDetails.FilmSlug}" target="_blank">
                                                 ${movieDetails.Title} - ${movieDetails.Roles}
                                             </a>
                                         </li>`
-                                    ).join('')}                                        
+                            ).join('')}                                        
                                     </ul>
                                 </li>`
                             ).join("") + "</ul>";
@@ -342,6 +356,14 @@
                 </select>
             </div>
 
+            <fieldset id="roleFilters">
+                <legend>Roles to Filter Out:</legend>
+                <label><input type="checkbox" class="roleFilter" name="roleFilter" value="additional_voices">Additional
+                    Voices</label>
+                <label><input type="checkbox" class="roleFilter" name="roleFilter" value="voice">(voice)</label>
+                <label><input type="checkbox" class="roleFilter" name="roleFilter"
+                        value="uncredited">(uncredited)</label>
+            </fieldset>
 
             <label for="topNMovies">Number of Movies to Consider:</label>
             <input type="number" id="topNMovies" placeholder="Optional (considers all by default)">

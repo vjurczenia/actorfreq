@@ -42,6 +42,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 type requestConfig struct {
 	sortStrategy string
 	topNMovies   int
+	roleFilters  []string
 }
 
 // fetchActorsHandler processes the form submission, fetches actor details, and returns JSON
@@ -51,7 +52,13 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	username := r.FormValue("username")
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+		return
+	}
+
+	username := r.Form.Get("username")
 	if username == "" {
 		http.Error(w, "Username is required", http.StatusBadRequest)
 		return
@@ -72,12 +79,12 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getRequestConfig(r *http.Request) requestConfig {
-	sortStrategy := r.FormValue("sortStrategy")
+	sortStrategy := r.Form.Get("sortStrategy")
 	if sortStrategy == "" {
 		sortStrategy = "date"
 	}
 
-	topNMoviesFormValue := r.FormValue("topNMovies")
+	topNMoviesFormValue := r.Form.Get("topNMovies")
 	topNMovies := -1
 	if topNMoviesFormValue != "" {
 		topNMoviesInt, err := strconv.Atoi(topNMoviesFormValue)
@@ -89,6 +96,7 @@ func getRequestConfig(r *http.Request) requestConfig {
 	return requestConfig{
 		sortStrategy: sortStrategy,
 		topNMovies:   topNMovies,
+		roleFilters:  r.Form["roleFilter"],
 	}
 }
 
