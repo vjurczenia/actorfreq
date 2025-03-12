@@ -3,6 +3,7 @@ package actorfreq
 import (
 	"log/slog"
 	"net/http"
+	"reflect"
 	"sort"
 	"strings"
 	"sync"
@@ -21,8 +22,22 @@ type movieDetails struct {
 	Roles    string
 }
 
+type fetchActorsCacheEntry struct {
+	rc        requestConfig
+	filmSlugs []string
+	result    []actorDetails
+}
+
+var fetchActorsCache = make(map[string]fetchActorsCacheEntry)
+
 func FetchActors(username string, rc requestConfig, w *http.ResponseWriter) []actorDetails {
 	filmSlugs := fetchFilmSlugs(username, rc.sortStrategy)
+
+	cacheHit, exists := fetchActorsCache[username]
+	if exists && reflect.DeepEqual(cacheHit.rc, rc) && reflect.DeepEqual(cacheHit.filmSlugs, filmSlugs) {
+		slog.Info("FetchActors cache hit")
+		return cacheHit.result
+	}
 
 	if rc.topNMovies > 0 && rc.topNMovies < len(filmSlugs) {
 		filmSlugs = filmSlugs[:rc.topNMovies]
@@ -60,7 +75,15 @@ func FetchActors(username string, rc requestConfig, w *http.ResponseWriter) []ac
 		}
 	}
 
-	return cleanActors(actors)
+	cleanedActors := cleanActors(actors)
+
+	fetchActorsCache[username] = fetchActorsCacheEntry{
+		rc:        rc,
+		filmSlugs: filmSlugs,
+		result:    cleanedActors,
+	}
+
+	return cleanedActors
 }
 
 func getFilms(filmSlugs []string) []FilmDetails {
