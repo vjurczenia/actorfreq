@@ -7,8 +7,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-
-	"gorm.io/gorm"
+	"time"
 )
 
 type actorDetails struct {
@@ -35,9 +34,9 @@ func FetchActors(username string, rc requestConfig, w *http.ResponseWriter) []ac
 		})
 	}
 
+	films := getFilms(filmSlugs)
 	actors := make(map[string]*actorDetails)
-	for i, slug := range filmSlugs {
-		film := getFilm(slug)
+	for i, film := range films {
 		for _, credit := range film.Cast {
 			actor, found := actors[credit.Actor]
 			filteredRoles := filterRoles(credit.Roles, rc.roleFilters)
@@ -47,7 +46,7 @@ func FetchActors(username string, rc requestConfig, w *http.ResponseWriter) []ac
 					actor = actors[credit.Actor]
 				}
 				actor.Movies = append(actor.Movies, movieDetails{
-					FilmSlug: slug,
+					FilmSlug: film.Slug,
 					Title:    film.Title,
 					Roles:    credit.Roles,
 				})
@@ -64,18 +63,47 @@ func FetchActors(username string, rc requestConfig, w *http.ResponseWriter) []ac
 	return cleanActors(actors)
 }
 
-func getFilm(slug string) FilmDetails {
-	var films []FilmDetails
-	var result *gorm.DB
+func getFilms(filmSlugs []string) []FilmDetails {
+	start := time.Now()
+
+	cacheHits := []FilmDetails{}
+
 	if db != nil {
-		result = db.Preload("Cast").Where("slug = ?", slug).Limit(1).Find(&films)
+		batchCacheHits := []FilmDetails{}
+		batchSize := 500
+
+		for i := 0; i < len(filmSlugs); i += batchSize {
+			end := min(i+batchSize, len(filmSlugs))
+			batchFilmSlugs := filmSlugs[i:end]
+
+			batchCacheHits = []FilmDetails{} // Clear previous batch results
+			db.Preload("Cast").Where("slug IN (?)", batchFilmSlugs).Find(&batchCacheHits)
+
+			cacheHits = append(cacheHits, batchCacheHits...)
+		}
 	}
-	if result == nil || result.Error != nil || result.RowsAffected == 0 {
-		slog.Info("Cache miss", "slug", slug)
-		return fetchFilmDetails(slug)
+
+	filmsMap := make(map[string]FilmDetails)
+	for _, film := range cacheHits {
+		filmsMap[film.Slug] = film
 	}
-	slog.Info("Cache hit", "slug", slug)
-	return films[0]
+
+	for _, filmSlug := range filmSlugs {
+		_, exists := filmsMap[filmSlug]
+		if !exists {
+			filmsMap[filmSlug] = fetchFilmDetails(filmSlug)
+		}
+	}
+
+	var films []FilmDetails
+	for _, filmSlug := range filmSlugs {
+		films = append(films, filmsMap[filmSlug])
+	}
+
+	elapsed := time.Since(start)
+	slog.Info("Execution time", "elapsed", elapsed)
+
+	return films
 }
 
 func filterRoles(roles string, roleFilters []string) string {
