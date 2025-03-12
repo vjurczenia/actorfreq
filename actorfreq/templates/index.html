@@ -237,6 +237,28 @@
         function toggleAdvancedOptions() {
             const advancedOptions = document.getElementById('advancedOptions');
             advancedOptions.style.display = advancedOptions.style.display === 'none' ? 'block' : 'none';
+            getURLSearchParams()
+        }
+
+        function getURLSearchParams() {
+            const username = document.getElementById("username").value;
+            const sortStrategy = document.getElementById("sortStrategy").value;
+            const topNMovies = document.getElementById("topNMovies").value;
+
+            const params = new URLSearchParams();
+
+            params.append("username", document.getElementById("username").value);
+            if (sortStrategy) { params.append("sortStrategy", sortStrategy); }
+            if (topNMovies) { params.append("topNMovies", topNMovies); }
+            document.querySelectorAll("input[name='roleFilter']:checked").forEach(checkbox => {
+                params.append("roleFilter", checkbox.value)
+            });
+            if (document.getElementById('advancedOptions').style.display === 'block') { params.append("advancedOptions", "open"); }
+
+            const newUrl = `${window.location.pathname}?${params.toString()}`;
+            window.history.pushState({}, '', newUrl);
+
+            return params
         }
 
         let eventSource;
@@ -253,14 +275,14 @@
             progressContainer.style.display = 'block'; // Show progress bar
 
             // Parse form and open a connection to the server for receiving progress updates and results
-            const params = new URLSearchParams();
-            params.append("username", document.getElementById("username").value);
-            params.append("sortStrategy", document.getElementById("sortStrategy").value);
-            params.append("topNMovies", document.getElementById("topNMovies").value);
-            document.querySelectorAll("input[name='roleFilter']:checked").forEach(checkbox => {
-                params.append("roleFilter", checkbox.value)
-            });
+            const params = getURLSearchParams();
             eventSource = new EventSource(`{{.FetchActorsPath}}?${params.toString()}`);
+
+            // Update the current window URL
+            if (advancedOptions.style.display === 'block') { params.append("advancedOptions", "open"); }
+            params.append("submit", "true");
+            const newUrl = `${window.location.pathname}?${params.toString()}`;
+            window.history.pushState({}, '', newUrl);
 
             var total = 0;
             eventSource.onmessage = function (event) {
@@ -316,12 +338,12 @@
 <body>
     <div class="container">
         <h1>Actor Frequency</h1>
-        <form onsubmit="fetchActors(event)">
+        <form id="fetchActorsForm" onsubmit="fetchActors(event)">
             <label for="username">Enter Letterboxd Username:</label>
             <input type="text" id="username" required>
-            
+
             <button type="button" onclick="toggleAdvancedOptions()">Advanced Options</button>
-            
+
             <div id="advancedOptions" style="display: none;">
                 <label for="sortStrategy">Sort By:</label>
                 <div class="select-wrapper">
@@ -355,18 +377,20 @@
                         </optgroup>
                     </select>
                 </div>
-        
+
                 <fieldset id="roleFilters">
                     <legend>Roles to Filter Out:</legend>
-                    <label><input type="checkbox" class="roleFilter" name="roleFilter" value="additional_voices">Additional Voices</label>
+                    <label><input type="checkbox" class="roleFilter" name="roleFilter"
+                            value="additional_voices">Additional Voices</label>
                     <label><input type="checkbox" class="roleFilter" name="roleFilter" value="voice">(voice)</label>
-                    <label><input type="checkbox" class="roleFilter" name="roleFilter" value="uncredited">(uncredited)</label>
+                    <label><input type="checkbox" class="roleFilter" name="roleFilter"
+                            value="uncredited">(uncredited)</label>
                 </fieldset>
-        
+
                 <label for="topNMovies">Number of Movies to Consider:</label>
                 <input type="number" id="topNMovies" placeholder="Optional (considers all by default)">
             </div>
-        
+
             <button type="submit">Submit</button>
         </form>
 
@@ -378,6 +402,12 @@
     </div>
 </body>
 <script>
+    document.getElementById("fetchActorsForm").addEventListener("change", function () {
+        const params = getURLSearchParams();
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.pushState({}, '', newUrl);
+    });
+
     document.getElementById("sortStrategy").addEventListener("change", function () {
         const selectedOption = this.options[this.selectedIndex];
         const optgroup = selectedOption.parentElement.label || ""; // Get the optgroup label if it exists
@@ -385,6 +415,36 @@
         const displayText = optgroup ? `${optgroup} - ${value}` : value;
 
         document.getElementById("selected-value").textContent = displayText;
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const urlParams = new URLSearchParams(window.location.search);
+
+        const username = urlParams.get("username");
+        const sortStrategy = urlParams.get("sortStrategy");
+        const topNMovies = urlParams.get("topNMovies");
+        const roleFilters = urlParams.getAll("roleFilter");
+        const advancedOptions = urlParams.get("advancedOptions");
+        const submit = urlParams.get("submit");
+
+        if (username) { document.getElementById("username").value = username; }
+        if (sortStrategy) {
+            const sortStrategyElement = document.getElementById("sortStrategy");
+            sortStrategyElement.value = sortStrategy;
+
+            // Manually trigger the 'change' event to update the display text
+            sortStrategyElement.dispatchEvent(new Event("change"));
+        }
+        if (topNMovies) { document.getElementById("topNMovies").value = topNMovies; }
+        document.querySelectorAll("input[name='roleFilter']").forEach(checkbox => {
+            if (roleFilters.includes(checkbox.value)) {
+                checkbox.checked = true;
+            }
+        });
+
+        if (advancedOptions == "open") { toggleAdvancedOptions(); }
+
+        if (submit == "true") { document.getElementById("fetchActorsForm").dispatchEvent(new Event("submit")); }
     });
 </script>
 
