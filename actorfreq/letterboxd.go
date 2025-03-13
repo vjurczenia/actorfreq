@@ -130,7 +130,7 @@ func fetchFilmDetails(slug string) FilmDetails {
 
 	filmDetails := FilmDetails{Slug: slug, Title: title, Cast: cast}
 
-	storeFilmToCache(filmDetails)
+	saveFilmToCache(filmDetails)
 
 	return filmDetails
 }

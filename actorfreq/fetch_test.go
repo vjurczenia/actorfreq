@@ -51,8 +51,8 @@ func TestFetchActors(t *testing.T) {
 		}, nil
 	})
 
-	setupTestDB()
-	db.Create(
+	setUpInMemorySQLiteDB()
+	memDB.Create(
 		&FilmDetails{
 			Slug:  "saving-private-ryan",
 			Title: "Saving Private Ryan",
@@ -62,7 +62,7 @@ func TestFetchActors(t *testing.T) {
 			},
 		},
 	)
-	db.Create(
+	memDB.Create(
 		&FilmDetails{
 			Slug:  "thor-ragnarok",
 			Title: "Thor: Ragnarok",

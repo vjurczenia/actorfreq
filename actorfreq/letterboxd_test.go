@@ -104,7 +104,7 @@ func TestFetchFilmDetails(t *testing.T) {
 		}, nil
 	})
 
-	setupTestDB()
+	setUpInMemorySQLiteDB()
 
 	actualFilmDetails := fetchFilmDetails("toy-story")
 
@@ -153,7 +153,7 @@ func TestFetchFilmDetails_NoValuesOnPage(t *testing.T) {
 		}, nil
 	})
 
-	setupTestDB()
+	setUpInMemorySQLiteDB()
 
 	actualFilmDetails := fetchFilmDetails("toy-story")
 

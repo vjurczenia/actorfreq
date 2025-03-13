@@ -6,12 +6,19 @@ import (
 	"os"
 
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-var db *gorm.DB
+var postgresDB *gorm.DB
+var memDB *gorm.DB
 
 func SetUpDB() {
+	setUpPostgresDB()
+	setUpInMemorySQLiteDB()
+}
+
+func setUpPostgresDB() {
 	dbHost := os.Getenv("ACTORFREQ_DB_HOST")
 	dbPort := os.Getenv("ACTORFREQ_DB_PORT")
 	dbUser := os.Getenv("ACTORFREQ_DB_USER")
@@ -22,15 +29,28 @@ func SetUpDB() {
 		dbHost, dbPort, dbUser, dbPassword, dbName)
 
 	var err error
-	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	postgresDB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		slog.Error("Failed to connect to the database:", "error", err)
 	}
 
-	migrateDB()
+	migrateDB(postgresDB)
 }
 
-func migrateDB() {
+func setUpInMemorySQLiteDB() {
+	disableInMemorySQLiteDB := os.Getenv("DISABLE_IN_MEMORY_SQLITE_DB")
+	if disableInMemorySQLiteDB != "true" {
+		var err error
+		memDB, err = gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+		if err != nil {
+			slog.Error("Failed to connect to in-memory SQLite database")
+		}
+
+		migrateDB(memDB)
+	}
+}
+
+func migrateDB(db *gorm.DB) {
 	if db != nil {
 		db.AutoMigrate(&FilmDetails{})
 		db.AutoMigrate(&Credit{})
@@ -40,37 +60,72 @@ func migrateDB() {
 func fetchCachedFilms(filmSlugs []string) []FilmDetails {
 	cacheHits := []FilmDetails{}
 
-	if db != nil {
+	if memDB != nil {
+		memDB.Preload("Cast").Where("slug IN (?)", filmSlugs).Find(&cacheHits)
+	}
+
+	cacheHitSlugs := []string{}
+
+	if postgresDB != nil {
+		for _, film := range cacheHits {
+			cacheHitSlugs = append(cacheHitSlugs, film.Slug)
+		}
+
+		cacheMissSlugs := difference(filmSlugs, cacheHitSlugs)
+
 		batchCacheHits := []FilmDetails{}
 		batchSize := 500
 
-		for i := 0; i < len(filmSlugs); i += batchSize {
-			end := min(i+batchSize, len(filmSlugs))
-			batchFilmSlugs := filmSlugs[i:end]
+		for i := 0; i < len(cacheMissSlugs); i += batchSize {
+			end := min(i+batchSize, len(cacheMissSlugs))
+			batchFilmSlugs := cacheMissSlugs[i:end]
 
 			batchCacheHits = []FilmDetails{} // Clear previous batch results
-			db.Preload("Cast").Where("slug IN (?)", batchFilmSlugs).Find(&batchCacheHits)
+			postgresDB.Preload("Cast").Where("slug IN (?)", batchFilmSlugs).Find(&batchCacheHits)
 
 			cacheHits = append(cacheHits, batchCacheHits...)
 		}
 	}
 
+	slog.Info("Finished fetching cached films",
+		"numHits", len(cacheHits),
+		"numMemHits", len(cacheHitSlugs),
+		"numPostgresHits", len(cacheHits)-len(cacheHitSlugs),
+	)
 	return cacheHits
 }
 
 func fetchCachedFilm(filmSlug string) (FilmDetails, bool) {
-	if db != nil {
-		var films []FilmDetails
-		result := db.Preload("Cast").Where("slug = ?", filmSlug).Limit(1).Find(&films)
-		if result.Error == nil && len(films) > 0 {
-			return films[0], true
+	for _, db := range []*gorm.DB{memDB, postgresDB} {
+		if db != nil {
+			var films []FilmDetails
+			result := db.Preload("Cast").Where("slug = ?", filmSlug).Limit(1).Find(&films)
+			if result.Error == nil && len(films) > 0 {
+				filmDetails := films[0]
+				slog.Info("Film cache hit", "db", getDBName(db), "filmSlug", filmDetails.Slug)
+				return filmDetails, true
+			}
 		}
 	}
+
 	return FilmDetails{}, false
 }
 
-func storeFilmToCache(filmDetails FilmDetails) {
-	if db != nil {
-		db.Create(&filmDetails)
+func saveFilmToCache(filmDetails FilmDetails) {
+	for _, db := range []*gorm.DB{memDB, postgresDB} {
+		if db != nil {
+			slog.Info("Saving film to cache", "db", getDBName(db), "filmSlug", filmDetails.Slug)
+			db.Save(&filmDetails)
+		}
 	}
+}
+
+func getDBName(db *gorm.DB) string {
+	switch db {
+	case memDB:
+		return "In-memory SQLite"
+	case postgresDB:
+		return "PostgreSQL"
+	}
+	return "Unknown DB"
 }

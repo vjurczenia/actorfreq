@@ -28,3 +28,19 @@ func fetchDoc(url string) *goquery.Document {
 
 	return doc
 }
+
+func difference(a, b []string) []string {
+	setB := make(map[string]struct{})
+	for _, item := range b {
+		setB[item] = struct{}{}
+	}
+
+	var result []string
+	for _, item := range a {
+		if _, found := setB[item]; !found {
+			result = append(result, item)
+		}
+	}
+
+	return result
+}
