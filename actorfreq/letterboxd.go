@@ -130,9 +130,7 @@ func fetchFilmDetails(slug string) FilmDetails {
 
 	filmDetails := FilmDetails{Slug: slug, Title: title, Cast: cast}
 
-	if db != nil {
-		db.Create(&filmDetails)
-	}
+	storeFilmToCache(filmDetails)
 
 	return filmDetails
 }

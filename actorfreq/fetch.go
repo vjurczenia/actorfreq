@@ -89,22 +89,7 @@ func FetchActors(username string, rc requestConfig, w *http.ResponseWriter) []ac
 func getFilms(filmSlugs []string) []FilmDetails {
 	start := time.Now()
 
-	cacheHits := []FilmDetails{}
-
-	if db != nil {
-		batchCacheHits := []FilmDetails{}
-		batchSize := 500
-
-		for i := 0; i < len(filmSlugs); i += batchSize {
-			end := min(i+batchSize, len(filmSlugs))
-			batchFilmSlugs := filmSlugs[i:end]
-
-			batchCacheHits = []FilmDetails{} // Clear previous batch results
-			db.Preload("Cast").Where("slug IN (?)", batchFilmSlugs).Find(&batchCacheHits)
-
-			cacheHits = append(cacheHits, batchCacheHits...)
-		}
-	}
+	cacheHits := fetchCachedFilms(filmSlugs)
 
 	filmsMap := make(map[string]FilmDetails)
 	for _, film := range cacheHits {
@@ -181,9 +166,9 @@ func precacheFollowing() {
 			if atomic.LoadInt32(&activeRequests) == 0 {
 				if len(filmSlugsToPrecache) != 0 {
 					slug := filmSlugsToPrecache[0]
-					var films []FilmDetails
-					result := db.Preload("Cast").Where("slug = ?", slug).Limit(1).Find(&films)
-					if result.Error != nil || result.RowsAffected == 0 {
+
+					_, exists := fetchCachedFilm(slug)
+					if !exists {
 						slog.Info("Precaching followedUser film slug", "slug", slug)
 						fetchFilmDetails(slug)
 					}

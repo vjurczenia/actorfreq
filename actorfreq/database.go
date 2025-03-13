@@ -36,3 +36,41 @@ func migrateDB() {
 		db.AutoMigrate(&Credit{})
 	}
 }
+
+func fetchCachedFilms(filmSlugs []string) []FilmDetails {
+	cacheHits := []FilmDetails{}
+
+	if db != nil {
+		batchCacheHits := []FilmDetails{}
+		batchSize := 500
+
+		for i := 0; i < len(filmSlugs); i += batchSize {
+			end := min(i+batchSize, len(filmSlugs))
+			batchFilmSlugs := filmSlugs[i:end]
+
+			batchCacheHits = []FilmDetails{} // Clear previous batch results
+			db.Preload("Cast").Where("slug IN (?)", batchFilmSlugs).Find(&batchCacheHits)
+
+			cacheHits = append(cacheHits, batchCacheHits...)
+		}
+	}
+
+	return cacheHits
+}
+
+func fetchCachedFilm(filmSlug string) (FilmDetails, bool) {
+	if db != nil {
+		var films []FilmDetails
+		result := db.Preload("Cast").Where("slug = ?", filmSlug).Limit(1).Find(&films)
+		if result.Error == nil && len(films) > 0 {
+			return films[0], true
+		}
+	}
+	return FilmDetails{}, false
+}
+
+func storeFilmToCache(filmDetails FilmDetails) {
+	if db != nil {
+		db.Create(&filmDetails)
+	}
+}
