@@ -115,7 +115,10 @@ func saveFilmToCache(filmDetails FilmDetails) {
 	for _, db := range []*gorm.DB{memDB, postgresDB} {
 		if db != nil {
 			slog.Info("Saving film to cache", "db", getDBName(db), "filmSlug", filmDetails.Slug)
-			db.Save(&filmDetails)
+			// GORM populates the ID after inserting into memDB, causing a conflict when inserting the same object into postgresDB.
+			// Handle by resetting the ID before inserting.
+			filmDetails.ID = 0
+			db.Create(&filmDetails)
 		}
 	}
 }
