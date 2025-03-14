@@ -49,9 +49,9 @@ func FetchActors(username string, rc requestConfig, w *http.ResponseWriter) []ac
 		})
 	}
 
-	films := getFilms(filmSlugs)
+	films := getFilms(filmSlugs, w)
 	actors := make(map[string]*actorDetails)
-	for i, film := range films {
+	for _, film := range films {
 		for _, credit := range film.Cast {
 			actor, found := actors[credit.Actor]
 			filteredRoles := filterRoles(credit.Roles, rc.roleFilters)
@@ -67,12 +67,6 @@ func FetchActors(username string, rc requestConfig, w *http.ResponseWriter) []ac
 				})
 			}
 		}
-
-		if w != nil {
-			sendMapAsSSEData(*w, map[string]int{
-				"progress": i + 1,
-			})
-		}
 	}
 
 	cleanedActors := cleanActors(actors)
@@ -86,10 +80,17 @@ func FetchActors(username string, rc requestConfig, w *http.ResponseWriter) []ac
 	return cleanedActors
 }
 
-func getFilms(filmSlugs []string) []FilmDetails {
+func getFilms(filmSlugs []string, w *http.ResponseWriter) []FilmDetails {
 	start := time.Now()
 
 	cacheHits := fetchCachedFilms(filmSlugs)
+
+	progress := len(cacheHits)
+	if w != nil {
+		sendMapAsSSEData(*w, map[string]int{
+			"progress": progress,
+		})
+	}
 
 	filmsMap := make(map[string]FilmDetails)
 	for _, film := range cacheHits {
@@ -100,6 +101,12 @@ func getFilms(filmSlugs []string) []FilmDetails {
 		_, exists := filmsMap[filmSlug]
 		if !exists {
 			filmsMap[filmSlug] = fetchFilmDetails(filmSlug)
+			if w != nil {
+				progress++
+				sendMapAsSSEData(*w, map[string]int{
+					"progress": progress,
+				})
+			}
 		}
 	}
 
