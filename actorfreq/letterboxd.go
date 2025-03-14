@@ -13,6 +13,14 @@ import (
 	"gorm.io/gorm"
 )
 
+var letterboxdMutex sync.Mutex
+
+func fetchLetterboxdDoc(url string) *goquery.Document {
+	letterboxdMutex.Lock()
+	defer letterboxdMutex.Unlock()
+	return fetchDoc(url)
+}
+
 func fetchFilmSlugs(username string, sortStrategy string) []string {
 	// Fetch film slugs and page count from first page
 	doc := fetchFilmsPageDoc(username, sortStrategy, 1)
@@ -73,7 +81,7 @@ func fetchFilmSlugs(username string, sortStrategy string) []string {
 
 func fetchFilmsPageDoc(username string, sortStrategy string, page int) *goquery.Document {
 	url := fmt.Sprintf("https://letterboxd.com/%s/films/by/%s/page/%d", username, sortStrategy, page)
-	return fetchDoc(url)
+	return fetchLetterboxdDoc(url)
 }
 
 func extractFilmSlugs(doc *goquery.Document) []string {
@@ -102,7 +110,7 @@ type FilmDetails struct {
 
 func fetchFilmDetails(slug string) FilmDetails {
 	url := fmt.Sprintf("https://letterboxd.com/film/%s/", slug)
-	doc := fetchDoc(url)
+	doc := fetchLetterboxdDoc(url)
 
 	title := doc.Find("h1.filmtitle").First().Text()
 	if title == "" {
@@ -137,7 +145,7 @@ func fetchFilmDetails(slug string) FilmDetails {
 
 func fetchFollowing(username string) []string {
 	url := fmt.Sprintf("https://letterboxd.com/%s/following/", username)
-	doc := fetchDoc(url)
+	doc := fetchLetterboxdDoc(url)
 
 	following := []string{}
 	doc.Find("td.table-person h3 a").Each(func(i int, s *goquery.Selection) {
