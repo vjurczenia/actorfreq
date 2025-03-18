@@ -56,13 +56,13 @@ func setUpInMemorySQLiteDB() {
 
 func migrateDB(db *gorm.DB) {
 	if db != nil {
-		db.AutoMigrate(&FilmDetails{})
+		db.AutoMigrate(&Film{})
 		db.AutoMigrate(&Credit{})
 	}
 }
 
-func fetchCachedFilms(filmSlugs []string) []FilmDetails {
-	cacheHits := []FilmDetails{}
+func fetchCachedFilms(filmSlugs []string) []Film {
+	cacheHits := []Film{}
 
 	if memDB != nil {
 		memDB.Preload("Cast").Where("slug IN (?)", filmSlugs).Find(&cacheHits)
@@ -77,14 +77,14 @@ func fetchCachedFilms(filmSlugs []string) []FilmDetails {
 
 		cacheMissSlugs := difference(filmSlugs, cacheHitSlugs)
 
-		batchCacheHits := []FilmDetails{}
+		batchCacheHits := []Film{}
 		batchSize := 500
 
 		for i := 0; i < len(cacheMissSlugs); i += batchSize {
 			end := min(i+batchSize, len(cacheMissSlugs))
 			batchFilmSlugs := cacheMissSlugs[i:end]
 
-			batchCacheHits = []FilmDetails{} // Clear previous batch results
+			batchCacheHits = []Film{} // Clear previous batch results
 			postgresDB.Preload("Cast").Where("slug IN (?)", batchFilmSlugs).Find(&batchCacheHits)
 
 			cacheHits = append(cacheHits, batchCacheHits...)
@@ -99,30 +99,30 @@ func fetchCachedFilms(filmSlugs []string) []FilmDetails {
 	return cacheHits
 }
 
-func fetchCachedFilm(filmSlug string) (FilmDetails, bool) {
+func fetchCachedFilm(filmSlug string) (Film, bool) {
 	for _, db := range []*gorm.DB{memDB, postgresDB} {
 		if db != nil {
-			var films []FilmDetails
+			var films []Film
 			result := db.Preload("Cast").Where("slug = ?", filmSlug).Limit(1).Find(&films)
 			if result.Error == nil && len(films) > 0 {
-				filmDetails := films[0]
-				slog.Info("Film cache hit", "db", getDBName(db), "filmSlug", filmDetails.Slug)
-				return filmDetails, true
+				films := films[0]
+				slog.Info("Film cache hit", "db", getDBName(db), "filmSlug", films.Slug)
+				return films, true
 			}
 		}
 	}
 
-	return FilmDetails{}, false
+	return Film{}, false
 }
 
-func saveFilmToCache(filmDetails FilmDetails) {
+func saveFilmToCache(films Film) {
 	for _, db := range []*gorm.DB{memDB, postgresDB} {
 		if db != nil {
-			slog.Info("Saving film to cache", "db", getDBName(db), "filmSlug", filmDetails.Slug)
+			slog.Info("Saving film to cache", "db", getDBName(db), "filmSlug", films.Slug)
 			// GORM populates the ID after inserting into memDB, causing a conflict when inserting the same object into postgresDB.
 			// Handle by resetting the ID before inserting.
-			filmDetails.ID = 0
-			db.Create(&filmDetails)
+			films.ID = 0
+			db.Create(&films)
 		}
 	}
 }

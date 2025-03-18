@@ -59,7 +59,7 @@ func FetchActors(username string, rc requestConfig, w *http.ResponseWriter) []ac
 	return cleanedActors
 }
 
-func getFilms(filmSlugs []string, w *http.ResponseWriter) []FilmDetails {
+func getFilms(filmSlugs []string, w *http.ResponseWriter) []Film {
 	start := time.Now()
 
 	cacheHits := fetchCachedFilms(filmSlugs)
@@ -71,7 +71,7 @@ func getFilms(filmSlugs []string, w *http.ResponseWriter) []FilmDetails {
 		})
 	}
 
-	filmsMap := make(map[string]FilmDetails)
+	filmsMap := make(map[string]Film)
 	for _, film := range cacheHits {
 		filmsMap[film.Slug] = film
 	}
@@ -79,7 +79,7 @@ func getFilms(filmSlugs []string, w *http.ResponseWriter) []FilmDetails {
 	for _, filmSlug := range filmSlugs {
 		_, exists := filmsMap[filmSlug]
 		if !exists {
-			filmsMap[filmSlug] = fetchFilmDetails(filmSlug)
+			filmsMap[filmSlug] = fetchFilm(filmSlug)
 			if w != nil {
 				progress++
 				sendMapAsSSEData(*w, map[string]int{
@@ -89,7 +89,7 @@ func getFilms(filmSlugs []string, w *http.ResponseWriter) []FilmDetails {
 		}
 	}
 
-	var films []FilmDetails
+	var films []Film
 	for _, filmSlug := range filmSlugs {
 		films = append(films, filmsMap[filmSlug])
 	}
@@ -156,7 +156,7 @@ func precacheFollowing() {
 					_, exists := fetchCachedFilm(slug)
 					if !exists {
 						slog.Info("Precaching followedUser film slug", "slug", slug)
-						fetchFilmDetails(slug)
+						fetchFilm(slug)
 					}
 
 					filmSlugsToPrecacheMutex.Lock()

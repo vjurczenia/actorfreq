@@ -65,7 +65,7 @@ func TestFetchFilmSlugs(t *testing.T) {
 	}
 }
 
-func compareFilmDetails(fd1, fd2 FilmDetails) bool {
+func compareFilms(fd1, fd2 Film) bool {
 	return fd1.Slug == fd2.Slug &&
 		fd1.Title == fd2.Title &&
 		slices.EqualFunc(fd1.Cast, fd2.Cast, func(a, b Credit) bool {
@@ -73,7 +73,7 @@ func compareFilmDetails(fd1, fd2 FilmDetails) bool {
 		})
 }
 
-func TestFetchFilmDetails(t *testing.T) {
+func TestFetchFilm(t *testing.T) {
 	actualHTTPCallCounts := make(map[string]int)
 	expectedHTTPCallCounts := map[string]int{
 		"https://letterboxd.com/film/toy-story/": 1,
@@ -106,16 +106,16 @@ func TestFetchFilmDetails(t *testing.T) {
 
 	setUpInMemorySQLiteDB()
 
-	actualFilmDetails := fetchFilmDetails("toy-story")
+	actualFilm := fetchFilm("toy-story")
 
-	expectedFilmDetails := FilmDetails{
+	expectedFilm := Film{
 		Slug:  "toy-story",
 		Title: "Toy Story",
 		Cast:  []Credit{{Actor: "Tom Hanks", Roles: "Woody / Another Role"}},
 	}
 
-	if !compareFilmDetails(expectedFilmDetails, actualFilmDetails) {
-		t.Errorf("Expected filmSlugs %v, got %v", expectedFilmDetails, actualFilmDetails)
+	if !compareFilms(expectedFilm, actualFilm) {
+		t.Errorf("Expected filmSlugs %v, got %v", expectedFilm, actualFilm)
 	}
 
 	for key := range actualHTTPCallCounts {
@@ -125,7 +125,7 @@ func TestFetchFilmDetails(t *testing.T) {
 	}
 }
 
-func TestFetchFilmDetails_NoValuesOnPage(t *testing.T) {
+func TestFetchFilm_NoValuesOnPage(t *testing.T) {
 	actualHTTPCallCounts := make(map[string]int)
 	expectedHTTPCallCounts := map[string]int{
 		"https://letterboxd.com/film/toy-story/": 1,
@@ -155,16 +155,16 @@ func TestFetchFilmDetails_NoValuesOnPage(t *testing.T) {
 
 	setUpInMemorySQLiteDB()
 
-	actualFilmDetails := fetchFilmDetails("toy-story")
+	actualFilm := fetchFilm("toy-story")
 
-	expectedFilmDetails := FilmDetails{
+	expectedFilm := Film{
 		Slug:  "toy-story",
 		Title: "toy-story",
 		Cast:  []Credit{},
 	}
 
-	if !compareFilmDetails(expectedFilmDetails, actualFilmDetails) {
-		t.Errorf("Expected filmSlugs %v, got %v", expectedFilmDetails, actualFilmDetails)
+	if !compareFilms(expectedFilm, actualFilm) {
+		t.Errorf("Expected filmSlugs %v, got %v", expectedFilm, actualFilm)
 	}
 
 	for key := range actualHTTPCallCounts {

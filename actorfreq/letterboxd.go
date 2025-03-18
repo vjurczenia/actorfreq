@@ -96,19 +96,19 @@ func extractFilmSlugs(doc *goquery.Document) []string {
 
 type Credit struct {
 	gorm.Model
-	Actor         string
-	Roles         string
-	FilmDetailsID uint `gorm:"index"`
+	Actor  string
+	Roles  string
+	FilmID uint `gorm:"index"`
 }
 
-type FilmDetails struct {
+type Film struct {
 	gorm.Model
 	Slug  string `gorm:"index"`
 	Title string
 	Cast  []Credit
 }
 
-func fetchFilmDetails(slug string) FilmDetails {
+func fetchFilm(slug string) Film {
 	url := fmt.Sprintf("https://letterboxd.com/film/%s/", slug)
 	doc := fetchLetterboxdDoc(url)
 
@@ -136,11 +136,11 @@ func fetchFilmDetails(slug string) FilmDetails {
 		cast = append(cast, Credit{Actor: actor, Roles: strings.Join(roles[actor], " / ")})
 	}
 
-	filmDetails := FilmDetails{Slug: slug, Title: title, Cast: cast}
+	film := Film{Slug: slug, Title: title, Cast: cast}
 
-	saveFilmToCache(filmDetails)
+	saveFilmToCache(film)
 
-	return filmDetails
+	return film
 }
 
 func fetchFollowing(username string) []string {
