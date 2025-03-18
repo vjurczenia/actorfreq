@@ -14,8 +14,15 @@ var postgresDB *gorm.DB
 var memDB *gorm.DB
 
 func SetUpDB() {
-	setUpPostgresDB()
-	setUpInMemorySQLiteDB()
+	disablePostgresDB := os.Getenv("DISABLE_POSTGRES_DB")
+	if disablePostgresDB != "true" {
+		setUpPostgresDB()
+	}
+
+	disableInMemorySQLiteDB := os.Getenv("DISABLE_IN_MEMORY_SQLITE_DB")
+	if disableInMemorySQLiteDB != "true" {
+		setUpInMemorySQLiteDB()
+	}
 }
 
 func setUpPostgresDB() {
@@ -38,16 +45,13 @@ func setUpPostgresDB() {
 }
 
 func setUpInMemorySQLiteDB() {
-	disableInMemorySQLiteDB := os.Getenv("DISABLE_IN_MEMORY_SQLITE_DB")
-	if disableInMemorySQLiteDB != "true" {
-		var err error
-		memDB, err = gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-		if err != nil {
-			slog.Error("Failed to connect to in-memory SQLite database")
-		}
-
-		migrateDB(memDB)
+	var err error
+	memDB, err = gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		slog.Error("Failed to connect to in-memory SQLite database")
 	}
+
+	migrateDB(memDB)
 }
 
 func migrateDB(db *gorm.DB) {
