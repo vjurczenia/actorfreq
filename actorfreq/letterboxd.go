@@ -98,12 +98,12 @@ type Credit struct {
 	gorm.Model
 	Actor         string
 	Roles         string
-	FilmDetailsID uint
+	FilmDetailsID uint `gorm:"index"`
 }
 
 type FilmDetails struct {
 	gorm.Model
-	Slug  string
+	Slug  string `gorm:"index"`
 	Title string
 	Cast  []Credit
 }
