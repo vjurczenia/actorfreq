@@ -103,7 +103,7 @@ type Credit struct {
 
 type Film struct {
 	gorm.Model
-	Slug  string `gorm:"index"`
+	Slug  string `gorm:"uniqueIndex"`
 	Title string
 	Cast  []Credit
 }
