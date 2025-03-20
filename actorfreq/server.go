@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"os"
 	"slices"
 	"strconv"
 	"sync"
@@ -80,7 +81,12 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	actors := fetchActors(username, requestConfig, &w)
+	var actors []actorDetails
+	if os.Getenv("FETCH_ACTORS_SEQUENTIALLY") == "true" {
+		actors = fetchActorsSequentially(username, requestConfig, &w)
+	} else {
+		actors = fetchActors(username, requestConfig, &w)
+	}
 
 	sendMapAsSSEData(w, map[string][]actorDetails{
 		"actors": actors,
