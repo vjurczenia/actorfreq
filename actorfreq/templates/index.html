@@ -288,7 +288,7 @@
             eventSource.onmessage = function (event) {
                 const data = JSON.parse(event.data);
                 if (data.total) {
-                    total = data.total;
+                    total = data.total * 1.025;
                 }
                 else if (data.progress) {
                     const progress = (data.progress / total) * 100;
