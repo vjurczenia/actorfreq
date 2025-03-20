@@ -100,7 +100,7 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	followedUsersToPrecacheForMutex.Unlock()
 
-	if !precacheFollowingStarted.Load() {
+	if !precacheFollowingStarted.Load() && os.Getenv("DISABLE_PRECACHE_FOLLOWING") != "true" {
 		go precacheFollowing()
 	}
 }
