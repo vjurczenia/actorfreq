@@ -14,13 +14,11 @@ var postgresDB *gorm.DB
 var memDB *gorm.DB
 
 func SetUpDB() {
-	disablePostgresDB := os.Getenv("DISABLE_POSTGRES_DB")
-	if disablePostgresDB != "true" {
+	if os.Getenv("DISABLE_POSTGRES_DB") != "true" {
 		setUpPostgresDB()
 	}
 
-	disableInMemorySQLiteDB := os.Getenv("DISABLE_IN_MEMORY_SQLITE_DB")
-	if disableInMemorySQLiteDB != "true" {
+	if os.Getenv("DISABLE_IN_MEMORY_SQLITE_DB") != "true" {
 		setUpInMemorySQLiteDB()
 	}
 }
