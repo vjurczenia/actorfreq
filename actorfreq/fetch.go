@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 type actorDetails struct {
@@ -60,8 +59,6 @@ func FetchActors(username string, rc requestConfig, w *http.ResponseWriter) []ac
 }
 
 func getFilms(filmSlugs []string, w *http.ResponseWriter) []Film {
-	start := time.Now()
-
 	cacheHits := fetchCachedFilms(filmSlugs)
 
 	progress := len(cacheHits)
@@ -93,9 +90,6 @@ func getFilms(filmSlugs []string, w *http.ResponseWriter) []Film {
 	for _, filmSlug := range filmSlugs {
 		films = append(films, filmsMap[filmSlug])
 	}
-
-	elapsed := time.Since(start)
-	slog.Info("Execution time", "elapsed", elapsed)
 
 	return films
 }
