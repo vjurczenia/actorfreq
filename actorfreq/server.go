@@ -80,7 +80,7 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	actors := FetchActors(username, requestConfig, &w)
+	actors := fetchActors(username, requestConfig, &w)
 
 	sendMapAsSSEData(w, map[string][]actorDetails{
 		"actors": actors,

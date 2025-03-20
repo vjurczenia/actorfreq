@@ -77,7 +77,7 @@ func TestFetchActors(t *testing.T) {
 		topNMovies:   3,
 		roleFilters:  []string{"uncredited"},
 	}
-	actualActors := FetchActors("testUser", rc, nil)
+	actualActors := fetchActors("testUser", rc, nil)
 
 	expectedActors := []actorDetails{
 		{

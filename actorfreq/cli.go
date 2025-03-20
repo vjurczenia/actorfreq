@@ -24,7 +24,7 @@ func CLI() {
 		topNMovies:   *topNMovies,
 	}
 
-	actors := FetchActors(*username, rc, nil)
+	actors := fetchActors(*username, rc, nil)
 
 	// Output top 10 actors
 	printTopActors(actors)
