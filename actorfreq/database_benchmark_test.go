@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/joho/godotenv"
-	"gorm.io/gorm"
 )
 
 func initDatabaseBenchmark() {
@@ -21,13 +20,15 @@ func initDatabaseBenchmark() {
 	slog.SetDefault(logger)
 }
 
-func prepareDatabaseBenchmarkDB(db *gorm.DB) {
-	db.Migrator().DropTable(&Film{})
-	db.Migrator().DropTable(&Credit{})
-	migrateDB(db)
+func prepareDatabaseBenchmarkDB() {
+	cacheDB.Migrator().DropTable(&Film{})
+	cacheDB.Migrator().DropTable(&Credit{})
+	migrateDB(cacheDB)
 }
 
 func runDatabaseBenchmark(b *testing.B) {
+	prepareDatabaseBenchmarkDB()
+
 	rc := requestConfig{
 		sortStrategy: "date",
 		topNMovies:   100,
@@ -48,7 +49,6 @@ func BenchmarkPostgresDBPerformance(b *testing.B) {
 
 	os.Setenv("ACTORFREQ_DB_NAME", "actorfreq_test")
 	setUpPostgresDB()
-	prepareDatabaseBenchmarkDB(postgresDB)
 
 	runDatabaseBenchmark(b)
 }
@@ -57,7 +57,6 @@ func BenchmarkInMemorySQLiteDBPerformance(b *testing.B) {
 	initDatabaseBenchmark()
 
 	setUpInMemorySQLiteDB()
-	prepareDatabaseBenchmarkDB(memDB)
 
 	runDatabaseBenchmark(b)
 }

@@ -140,7 +140,7 @@ var followedUsersToPrecacheFor = []string{}
 
 func precacheFollowing() {
 	precacheFollowingStarted.Store(true)
-	if postgresDB != nil || memDB != nil {
+	if cacheDB != nil {
 		defer precacheFollowingStarted.Store(false)
 		for {
 			if atomic.LoadInt32(&activeRequests) == 0 {

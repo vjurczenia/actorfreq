@@ -54,8 +54,8 @@ func fetchActorsSequentially(username string, rc requestConfig, w *http.Response
 func getFilm(slug string) Film {
 	var films []Film
 	var result *gorm.DB
-	if postgresDB != nil {
-		result = postgresDB.Preload("Cast").Where("slug = ?", slug).Limit(1).Find(&films)
+	if cacheDB != nil {
+		result = cacheDB.Preload("Cast").Where("slug = ?", slug).Limit(1).Find(&films)
 	}
 	if result == nil || result.Error != nil || result.RowsAffected == 0 {
 		slog.Info("Sequential cache miss", "slug", slug)
