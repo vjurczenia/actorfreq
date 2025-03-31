@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"log/slog"
 	"net/http"
 	"os"
 	"slices"
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 var FetchActorsPath string = "fetch-actors/"
@@ -81,11 +83,24 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
+	requestCache.evict() // clear out expired cache items
+	requestCacheKey := r.Form.Encode()
 	var actors []actorDetails
-	if os.Getenv("FETCH_ACTORS_SEQUENTIALLY") == "true" {
-		actors = fetchActorsSequentially(username, requestConfig, &w)
+	if value, found := requestCache.get(requestCacheKey); found {
+		slog.Info("Request cache hit",
+			"requestCacheKey", requestCacheKey,
+			"numItems", len(requestCache.items),
+			"totalSize", requestCache.totalSize,
+		)
+		actors = value
 	} else {
-		actors = fetchActors(username, requestConfig, &w)
+		if os.Getenv("FETCH_ACTORS_SEQUENTIALLY") == "true" {
+			actors = fetchActorsSequentially(username, requestConfig, &w)
+		} else {
+			actors = fetchActors(username, requestConfig, &w)
+		}
+		requestCache.set(requestCacheKey, actors, 10*time.Minute)
+		slog.Info("Request cache updated", "numItems", len(requestCache.items), "totalSize", requestCache.totalSize)
 	}
 
 	sendMapAsSSEData(w, map[string][]actorDetails{
