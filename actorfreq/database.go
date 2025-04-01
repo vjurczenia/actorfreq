@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"reflect"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -18,6 +19,7 @@ func SetUpDB() {
 	} else if os.Getenv("DISABLE_IN_MEMORY_SQLITE_DB") != "true" {
 		setUpInMemorySQLiteDB()
 	}
+	setUpGORMTables()
 }
 
 func setUpPostgresDB() {
@@ -35,8 +37,6 @@ func setUpPostgresDB() {
 	if err != nil {
 		slog.Error("Failed to connect to the database:", "error", err)
 	}
-
-	migrateDB(cacheDB)
 }
 
 func setUpInMemorySQLiteDB() {
@@ -45,14 +45,17 @@ func setUpInMemorySQLiteDB() {
 	if err != nil {
 		slog.Error("Failed to connect to in-memory SQLite database")
 	}
-
-	migrateDB(cacheDB)
 }
 
-func migrateDB(db *gorm.DB) {
-	if db != nil {
-		db.AutoMigrate(&Film{})
-		db.AutoMigrate(&Credit{})
+func setUpGORMTables() {
+	if cacheDB != nil {
+		for _, table := range []any{&Film{}, &Credit{}} {
+			if os.Getenv("FORCE_DB_RESET") == "true" {
+				slog.Warn("FORCE_DB_RESET set, dropping table", "table", reflect.TypeOf(table))
+				cacheDB.Migrator().DropTable(table)
+			}
+			cacheDB.AutoMigrate(table)
+		}
 	}
 }
 

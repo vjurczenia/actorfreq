@@ -23,7 +23,7 @@ func initDatabaseBenchmark() {
 func prepareDatabaseBenchmarkDB() {
 	cacheDB.Migrator().DropTable(&Film{})
 	cacheDB.Migrator().DropTable(&Credit{})
-	migrateDB(cacheDB)
+	setUpGORMTables()
 }
 
 func runDatabaseBenchmark(b *testing.B) {
