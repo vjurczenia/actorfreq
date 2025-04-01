@@ -28,6 +28,7 @@ func StartServer() {
 func AddHandlers(root string) {
 	http.HandleFunc(root, homeHandler)
 	http.HandleFunc(fmt.Sprintf("%s%s", root, FetchActorsPath), fetchActorsHandler)
+	http.HandleFunc(fmt.Sprintf("%s%s", root, "clear-request-cache"), clearRequestCacheHandler)
 }
 
 //go:embed templates
@@ -161,4 +162,12 @@ func sendMapAsSSEData[K comparable, V any](w http.ResponseWriter, m map[K]V) {
 	if flusher, ok := w.(http.Flusher); ok {
 		flusher.Flush()
 	}
+}
+
+func clearRequestCacheHandler(w http.ResponseWriter, r *http.Request) {
+	slog.Warn("Clearing request cache", "numItems", len(requestCache.items), "totalSize", requestCache.totalSize)
+	requestCache.evictAll()
+	slog.Warn("Request cache cleared", "numItems", len(requestCache.items), "totalSize", requestCache.totalSize)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Request cache cleared successfully"))
 }

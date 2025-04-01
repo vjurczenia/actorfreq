@@ -91,3 +91,12 @@ func (c *Cache) evict() {
 	}
 	c.mutex.Unlock()
 }
+
+func (c *Cache) evictAll() {
+	c.mutex.Lock()
+	for key, item := range c.items {
+		c.totalSize -= item.size
+		delete(c.items, key)
+	}
+	c.mutex.Unlock()
+}
