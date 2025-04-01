@@ -1,26 +1,33 @@
 package actorfreq
 
 import (
+	"container/list"
+	"log/slog"
 	"sync"
 	"time"
 	"unsafe"
 )
 
 type cacheItem struct {
+	key        string
 	value      []actorDetails
 	expiration int64
 	size       int
+
+	element *list.Element
 }
 
 type Cache struct {
-	items     map[string]cacheItem
+	items     map[string]*cacheItem
+	order     *list.List
 	mutex     sync.RWMutex
 	totalSize int
 	maxSize   int
 }
 
 var requestCache = &Cache{
-	items:   make(map[string]cacheItem),
+	items:   make(map[string]*cacheItem),
+	order:   list.New(),
 	maxSize: 100 * 1024 * 1024, // 100MB
 }
 
@@ -51,24 +58,42 @@ func calculateSize(actors []actorDetails) int {
 	return totalSize
 }
 
+func (c *Cache) remove(item *cacheItem) {
+	c.totalSize -= item.size
+	c.order.Remove(item.element)
+	delete(c.items, item.key)
+}
+
 func (c *Cache) set(key string, value []actorDetails, duration time.Duration) {
 	size := calculateSize(value)
-	expiration := time.Now().Add(duration).UnixNano()
+
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	// Remove existing item size if key already exists
-	if item, found := c.items[key]; found {
-		c.totalSize -= item.size
-	}
+	if size < c.maxSize {
+		// Remove existing item if key already exists
+		if item, found := c.items[key]; found {
+			c.remove(item)
+		}
 
-	// Ensure cache does not exceed max size
-	for c.totalSize+size > c.maxSize {
-		c.evict()
-	}
+		// Ensure cache does not exceed max size
+		for c.totalSize+size > c.maxSize {
+			if oldest := c.order.Front(); oldest != nil {
+				key := oldest.Value.(string)
+				if item, found := c.items[key]; found {
+					c.remove(item)
+				}
+			}
+		}
 
-	c.items[key] = cacheItem{value: value, expiration: expiration, size: size}
-	c.totalSize += size
+		expiration := time.Now().Add(duration).UnixNano()
+		element := c.order.PushBack(key)
+		c.items[key] = &cacheItem{key: key, value: value, expiration: expiration, size: size, element: element}
+		c.totalSize += size
+		slog.Info("Request cache updated", "numItems", len(c.items), "totalSize", c.totalSize)
+	} else {
+		slog.Info("Value too large for request cache", "key", key, "size", size, "maxSize", c.maxSize)
+	}
 }
 
 func (c *Cache) get(key string) ([]actorDetails, bool) {
@@ -83,10 +108,9 @@ func (c *Cache) get(key string) ([]actorDetails, bool) {
 
 func (c *Cache) evict() {
 	c.mutex.Lock()
-	for key, item := range c.items {
-		if time.Now().UnixNano() > item.expiration || c.totalSize > c.maxSize {
-			c.totalSize -= item.size
-			delete(c.items, key)
+	for _, item := range c.items {
+		if time.Now().UnixNano() > item.expiration {
+			c.remove(item)
 		}
 	}
 	c.mutex.Unlock()
@@ -94,9 +118,8 @@ func (c *Cache) evict() {
 
 func (c *Cache) evictAll() {
 	c.mutex.Lock()
-	for key, item := range c.items {
-		c.totalSize -= item.size
-		delete(c.items, key)
+	for _, item := range c.items {
+		c.remove(item)
 	}
 	c.mutex.Unlock()
 }

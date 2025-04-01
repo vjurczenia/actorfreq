@@ -101,7 +101,6 @@ func fetchActorsHandler(w http.ResponseWriter, r *http.Request) {
 			actors = fetchActors(username, requestConfig, &w)
 		}
 		requestCache.set(requestCacheKey, actors, 10*time.Minute)
-		slog.Info("Request cache updated", "numItems", len(requestCache.items), "totalSize", requestCache.totalSize)
 	}
 
 	sendMapAsSSEData(w, map[string][]actorDetails{
